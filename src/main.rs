@@ -1,5 +1,4 @@
 use poise::serenity_prelude as serenity;
-
 use poise::serenity_prelude::AttachmentType;
 use tokio::fs::File;
 
@@ -58,13 +57,13 @@ async fn map(
         for x in offset_x_min..offset_x_max {
             let mut tile_row: Vec<Tile> = Vec::new();
             for y in offset_y_min..offset_y_max {
-                let t: Tile;
+                let current_tile: Tile;
                 if !db::internal_check_tile(&database, x, y).await {
-                    t = blank_tile().await;
+                    current_tile = blank_tile().await;
                 } else {
-                    t = db::internal_get_tile(&database, x, y).await;
+                    current_tile = db::internal_get_tile(&database, x, y).await;
                 }
-                tile_row.push(t);
+                tile_row.push(current_tile);
             }
             tiles.push(tile_row);
         }
@@ -72,10 +71,10 @@ async fn map(
     let start = std::time::Instant::now();
     let image = image::draw_map(&tiles).await;
     println!("Map drawn in {}ms", start.elapsed().as_millis()); // Just for debugging, will be removed later
-    raster::save(&image, "map.png").unwrap();
+    image.save("map.jpg").unwrap();
     let attachment = AttachmentType::File {
-        file: &File::open("map.png").await?,
-        filename: "map.png".to_string(),
+        file: &File::open("map.jpg").await?,
+        filename: "map.jpg".to_string(),
     };
 
     ctx.send(|b| b.attachment(attachment)).await?;
