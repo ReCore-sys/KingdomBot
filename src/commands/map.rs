@@ -1,8 +1,10 @@
-use crate::db::tiles::blank_tile;
-use crate::map::Tile;
-use crate::{db, Context, Error};
+use db::tiles;
 use poise::serenity_prelude::AttachmentType;
 use tokio::fs::File;
+
+use crate::db::tiles::{blank_tile, invert_y};
+use crate::map::Tile;
+use crate::{db, Context, Error};
 
 #[poise::command(slash_command, prefix_command)]
 pub(crate) async fn map(
@@ -19,11 +21,11 @@ pub(crate) async fn map(
     let offset_y_max = y + offset_base;
     let x_range = (offset_x_min, offset_x_max);
     let y_range = (offset_y_min, offset_y_max);
-    let tiles_exist = db::tiles::all_exist(x_range, y_range).await; // Check if all tiles exist
+    let tiles_exist = tiles::all_exist(x_range, y_range).await; // Check if all tiles exist
     println!("Tiles exist: {}", tiles_exist);
     if tiles_exist {
         // If they do, get them from the database
-        let flat_tiles = db::tiles::get_many(x_range, y_range).await;
+        let flat_tiles = tiles::get_many(x_range, y_range).await;
         let mut tile_row: Vec<Tile> = Vec::new();
         let mut i = 0;
         println!("{} tiles", flat_tiles.len());
@@ -37,7 +39,7 @@ pub(crate) async fn map(
             }
         }
     } else {
-        if !db::tiles::any_exist(x_range, y_range).await {
+        if !tiles::any_exist(x_range, y_range).await {
             for x in offset_x_min..offset_x_max {
                 let mut tile_row: Vec<Tile> = Vec::new();
                 for y in offset_y_min..offset_y_max {
@@ -53,10 +55,10 @@ pub(crate) async fn map(
                 let mut tile_row: Vec<Tile> = Vec::new();
                 for y in offset_y_min..offset_y_max {
                     let current_tile: Tile;
-                    if !db::tiles::internal_check_tile(&database, x, y).await {
+                    if !tiles::internal_check_tile(&database, x, y).await {
                         current_tile = blank_tile(x, y).await;
                     } else {
-                        current_tile = db::tiles::internal_get_tile(&database, x, y).await;
+                        current_tile = tiles::internal_get_tile(&database, x, y).await;
                     }
                     tile_row.push(current_tile);
                 }
@@ -65,14 +67,39 @@ pub(crate) async fn map(
         }
     }
     let start = std::time::Instant::now();
+    tiles = invert_y(tiles).await;
     let image = crate::image::draw_map(&tiles).await;
-    println!("Map drawn in {}ms", start.elapsed().as_millis()); // Just for debugging, will be removed later
-    image.save("map.png").unwrap();
+    println!("Map drawn in {}ms", start.elapsed().as_millis());
+    image.save("map.png")?;
     let attachment = AttachmentType::File {
         file: &File::open("map.png").await?,
         filename: "map.png".to_string(),
     };
 
     ctx.send(|b| b.attachment(attachment)).await?;
+    Ok(())
+}
+
+#[poise::command(slash_command, prefix_command)]
+pub(crate) async fn create_tile(
+    ctx: Context<'_>,
+    #[description = "X coordinate of the tile"] x: i32,
+    #[description = "Y coordinate of the tile"] y: i32,
+) -> Result<(), Error> {
+    if ctx
+        .author_member()
+        .await
+        .unwrap()
+        .permissions
+        .unwrap()
+        .administrator()
+    {
+        let tile = blank_tile(x, y).await;
+        tiles::set_tile(tile).await.expect("Failed to set tile");
+        ctx.say("Tile created").await?;
+    } else {
+        ctx.say("You do not have permission to use this command")
+            .await?;
+    }
     Ok(())
 }

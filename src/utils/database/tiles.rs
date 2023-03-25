@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use futures::stream::TryStreamExt;
 use mongodb::bson::doc;
 use mongodb::options::FindOptions;
@@ -294,4 +296,18 @@ pub async fn blank_tile_range(x_range: (i32, i32), y_range: (i32, i32)) -> Vec<T
         }
     }
     tiles
+}
+
+// For some reason, the y axis is inverted. This function just reverses the order of each y axis
+pub async fn invert_y(tiles: Vec<Vec<Tile>>) -> Vec<Vec<Tile>> {
+    let mut new_tiles = Vec::new();
+    for row in tiles {
+        let mut new_row = Vec::new();
+        for tile in row {
+            new_row.push(tile);
+        }
+        new_row.reverse();
+        new_tiles.push(new_row);
+    }
+    new_tiles
 }

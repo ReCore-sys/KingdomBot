@@ -1,5 +1,8 @@
 use poise::serenity_prelude as serenity;
 
+use crate::commands::map::create_tile;
+use commands::map::map;
+
 mod commands;
 #[path = "utils/config.rs"]
 mod config;
@@ -9,6 +12,7 @@ mod db;
 mod image;
 #[path = "utils/types/map.rs"]
 mod map;
+mod tests;
 
 struct Data {}
 
@@ -21,7 +25,7 @@ async fn main() {
     println!("Starting bot...");
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![commands::map::map()], // for some reason intellij is complaining about this line, but it works fine
+            commands: vec![map(), create_tile()], // for some reason intellij is complaining about this line, but it works fine
             ..Default::default()
         })
         .token(config::get_config().discord_token)
