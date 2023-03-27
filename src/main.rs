@@ -6,6 +6,8 @@ use commands::map::map;
 mod commands;
 #[path = "utils/config.rs"]
 mod config;
+#[path = "utils/conversions.rs"]
+mod conversions;
 #[path = "utils/db.rs"]
 mod db;
 #[path = "utils/image.rs"]

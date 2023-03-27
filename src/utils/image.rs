@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
-use image::{ImageBuffer, Rgb, RgbImage, Rgba, RgbaImage};
-use imageproc::drawing::{draw_text, draw_text_mut, Canvas};
+use image::{ImageBuffer, Rgb, RgbImage, Rgba};
+use imageproc::drawing::{draw_filled_rect, draw_text_mut, Canvas};
 use noise::{Clamp, NoiseFn, OpenSimplex};
 use rusttype::{Font, Scale};
 
@@ -11,10 +9,10 @@ use crate::map;
 const TILE_SIZE: i32 = 150;
 const BORDER_SIZE: i32 = 5;
 pub const VIEW_DISTANCE: i32 = 10;
-const PIXEL_CLUMPING: i32 = 45;
-const IMAGE_DIMENSIONS: i32 = TILE_SIZE * VIEW_DISTANCE + BORDER_SIZE * (VIEW_DISTANCE + 1);
+const PIXEL_CLUMPING: i32 = 35;
 
-const TEXT_SCALE: f32 = 40.0;
+const TEXT_SCALE: f32 = 75.0;
+const LETTER_WIDTH: i32 = 30;
 
 pub async fn draw_map(grid: &Vec<Vec<map::Tile>>) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
     // draw a 2d grid of tiles based off the vector of vectors given
@@ -38,9 +36,9 @@ pub async fn draw_map(grid: &Vec<Vec<map::Tile>>) -> ImageBuffer<Rgb<u8>, Vec<u8
     let font = Vec::from(include_bytes!("font.ttf") as &[u8]);
     let font = Font::try_from_vec(font).unwrap();
 
-    let clamp = Clamp::new(perlin).set_bounds(0.2, 0.4);
-    for x in 0..grid.len() as i32 {
-        for y in 0..grid[x as usize].len() as i32 {
+    let clamp = Clamp::new(perlin).set_bounds(0.1, 0.4);
+    for x in 1..grid.len() as i32 {
+        for y in 0..(grid[x as usize].len() - 1) as i32 {
             // Draw the tile first
             for tile_x in 0..TILE_SIZE {
                 for tile_y in 0..TILE_SIZE {
@@ -109,62 +107,39 @@ pub async fn draw_map(grid: &Vec<Vec<map::Tile>>) -> ImageBuffer<Rgb<u8>, Vec<u8
         }
     }
     // Now draw the text
-    // the text is drawn in the center of the tile and only on the first row and column
+    // the text is drawn in the center of the tile and only on the first column and last row
     // of the grid
+    let text_color = Rgb([255, 255, 255]);
     for x_counter in 1..grid.len() {
+        let text = format!("{}", grid[x_counter][0].x);
+        let text_width = text.len() as f32 * (LETTER_WIDTH as f32);
+
         draw_text_mut(
             &mut image,
-            Rgb([0, 0, 0]),
-            ((TILE_SIZE + BORDER_SIZE) * x_counter as i32) + (TILE_SIZE / 2),
-            (grid.len() as i32) * TILE_SIZE - (TILE_SIZE / 2),
+            text_color,
+            ((TILE_SIZE + BORDER_SIZE) * x_counter as i32) + (TILE_SIZE / 2)
+                - (text_width as i32 / 2),
+            (grid.len() as i32) * TILE_SIZE - (BORDER_SIZE * grid.len() as i32),
             scale,
             &font,
-            &format!("{}", grid[x_counter][0].x),
+            text.as_str(),
         );
     }
     for y_counter in 0..grid[0].len() - 1 {
+        let text = format!("{}", grid[0][y_counter].y);
+        let text_width = text.len() as f32 * (LETTER_WIDTH as f32);
         draw_text_mut(
             &mut image,
-            Rgb([0, 0, 0]),
-            TILE_SIZE / 2,
-            ((TILE_SIZE + BORDER_SIZE) * y_counter as i32) + (TILE_SIZE / 2),
+            text_color,
+            TILE_SIZE / 2 - (text_width as i32 / 2),
+            ((TILE_SIZE + BORDER_SIZE) * y_counter as i32) + (BORDER_SIZE * grid.len() as i32),
             scale,
             &font,
-            &format!("{}", grid[0][y_counter].y),
+            text.as_str(),
         );
     }
 
     image
-}
-
-pub fn rgb_to_hsv(r: i32, g: i32, b: i32) -> (f32, f32, f32) {
-    // Convert the RGB values to HSV
-    // Hue should be in the range 0-360
-    // Saturation should be in the range 0-100
-    // Value should be in the range 0-100
-    let r = r as f32 / 255.0;
-    let g = g as f32 / 255.0;
-    let b = b as f32 / 255.0;
-
-    let max = r.max(g).max(b);
-    let min = r.min(g).min(b);
-    let delta = max - min;
-
-    let hue = if delta == 0.0 {
-        0.0
-    } else if max == r {
-        60.0 * ((g - b) / delta % 6.0)
-    } else if max == g {
-        60.0 * ((b - r) / delta + 2.0)
-    } else {
-        60.0 * ((r - g) / delta + 4.0)
-    };
-
-    let mut saturation = if max == 0.0 { 0.0 } else { delta / max };
-    let value = max;
-    saturation *= 100.0;
-
-    (hue, saturation, value)
 }
 
 pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
