@@ -1,10 +1,10 @@
-use image::{ImageBuffer, Rgb, RgbImage, Rgba};
-use imageproc::drawing::{draw_filled_rect, draw_text_mut, Canvas};
+use image::{ImageBuffer, Rgb, RgbImage};
+use imageproc::drawing::{draw_text_mut, Canvas};
 use noise::{Clamp, NoiseFn, OpenSimplex};
 use rusttype::{Font, Scale};
 
 use crate::config::get_config;
-use crate::map;
+use crate::{map, types};
 
 const TILE_SIZE: i32 = 150;
 const BORDER_SIZE: i32 = 5;
@@ -14,7 +14,7 @@ const PIXEL_CLUMPING: i32 = 35;
 const TEXT_SCALE: f32 = 75.0;
 const LETTER_WIDTH: i32 = 30;
 
-pub async fn draw_map(grid: &Vec<Vec<map::Tile>>) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+pub async fn draw_map(grid: &Vec<Vec<types::map::Tile>>) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
     // draw a 2d grid of tiles based off the vector of vectors given
     // draw each tile as TILE_SIZE * TILE_SIZE pixels with a BORDER_SIZE pixel border
     // if the tile is occupied, draw the border as red, otherwise draw it as black

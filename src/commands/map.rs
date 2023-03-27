@@ -5,7 +5,7 @@ use db::tiles;
 
 use crate::conversions::{bytes_to_string, split_tiles};
 use crate::db::tiles::{blank_tile, invert_y};
-use crate::map::Tile;
+use crate::types::map::Tile;
 use crate::{db, Context, Error};
 
 // The parent command. Doesn't really need to do anything.
@@ -16,7 +16,7 @@ pub(crate) async fn map(_: Context<'_>) -> Result<(), Error> {
 
 // The user-facing command. This is the one that gets called when the user types /map position
 // it calls on the create_reply function to get the image, but ignores the message
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command, prefix_command, ephemeral)]
 pub(crate) async fn position(
     ctx: Context<'_>,
     #[description = "X coordinate of the centre tile"] x: i32,
@@ -34,7 +34,7 @@ pub(crate) async fn position(
 }
 
 // Same as the position command, but this one sends the message as well
-#[poise::command(slash_command, prefix_command, track_edits)]
+#[poise::command(slash_command, prefix_command, track_edits, ephemeral)]
 pub(crate) async fn dev(
     ctx: Context<'_>,
     #[description = "X coordinate of the centre tile"] x: i32,

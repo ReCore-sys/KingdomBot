@@ -1,12 +1,10 @@
-use std::ops::Deref;
-
 use futures::stream::TryStreamExt;
 use mongodb::bson::doc;
 use mongodb::options::FindOptions;
 use mongodb::Database;
 
 use crate::db;
-use crate::map::{Building, Tile, TileOccupant, Unit};
+use crate::types::map::Tile;
 
 /// Gets a tile. Uses a pre-existing database connection
 ///

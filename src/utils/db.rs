@@ -1,8 +1,12 @@
 use mongodb::options::ClientOptions;
 use mongodb::{Client, Database};
 
+#[path = "database/factions.rs"]
+pub(crate) mod factions;
 #[path = "database/tiles.rs"]
 pub(crate) mod tiles;
+#[path = "database/users.rs"]
+pub(crate) mod users;
 
 /// Gets a MongoDB database connection
 ///

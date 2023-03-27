@@ -1,2 +1,3 @@
-#[path = "commands/map.rs"]
+pub mod faction;
 pub mod map;
+pub mod users;
