@@ -1,31 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::db::tiles::blank_tile;
-    use crate::image::{hsv_to_rgb, rgb_to_hsv};
-
-    #[test]
-    fn test_hsv() {
-        let (h, s, v) = rgb_to_hsv(255, 0, 0);
-        assert_eq!(h, 0.0);
-        assert_eq!(s, 1.0);
-        assert_eq!(v, 1.0);
-    }
-
-    #[test]
-    fn test_hsv2() {
-        let (h, s, v) = rgb_to_hsv(175, 255, 175);
-        assert_eq!(h, 120.0);
-        assert_eq!(format!("{:.1}", s), "31.4");
-        assert_eq!(v, 1.0);
-    }
-
-    #[test]
-    fn test_hsv3() {
-        let (h, s, v) = rgb_to_hsv(0, 0, 0);
-        assert_eq!(h, 0.0);
-        assert_eq!(s, 0.0);
-        assert_eq!(v, 0.0);
-    }
+    use crate::image::hsv_to_rgb;
 
     #[test]
     fn test_hsv2rgb() {

@@ -1,9 +1,11 @@
+use commands::map::map;
 use poise::serenity_prelude as serenity;
+use rust_embed::RustEmbed;
 
 use crate::commands::faction::faction;
+use crate::commands::help::{explain, guide};
 use crate::commands::map::create_tile;
 use crate::commands::users::register;
-use commands::map::map;
 
 mod commands;
 #[path = "utils/config.rs"]
@@ -18,18 +20,31 @@ mod tests;
 #[path = "utils/types.rs"]
 mod types;
 
+#[derive(RustEmbed)]
+#[folder = "src/help/topics/"]
+struct HelpTopics;
+
 struct Data {}
 
 // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
+const GUIDE_MESSAGE: &str = include_str!("help/guide.txt");
+
 #[tokio::main]
 async fn main() {
     println!("Starting bot...");
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![map(), create_tile(), faction(), register()], // for some reason intellij is complaining about this line, but it works fine
+            commands: vec![
+                map(),
+                create_tile(),
+                faction(),
+                register(),
+                guide(),
+                explain(),
+            ], // for some reason intellij is complaining about this line, but it works fine
             ..Default::default()
         })
         .token(config::get_config().discord_token)

@@ -1,11 +1,14 @@
-use poise::Modal;
+
+
+
+use poise::{Modal};
 
 use crate::conversions::modal_to_faction;
 use crate::{db, Context, Data, Error};
 
 type ApplicationContext<'a> = poise::ApplicationContext<'a, Data, Error>;
 
-#[poise::command(slash_command, prefix_command, subcommands("create"))]
+#[poise::command(slash_command, prefix_command, subcommands("create", "info"))]
 pub(crate) async fn faction(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -49,15 +52,52 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
     }
     let mut converted_data = modal_to_faction(data).await;
     converted_data.leader = ctx.author().id.to_string();
-    converted_data.money = 100.0;
+    converted_data.production.money = 100.0;
+    converted_data.production.food = 100.0;
+    converted_data.production.population = 100;
+    converted_data.production.happiness = 80.0;
     db::factions::save_faction(converted_data)
         .await
         .expect("Failed to save faction");
-    ctx.say("Faction created!").await?;
+    let message = "*The seeds of a mighty empire have been sown...*\n\nFeel free to use the **/info** command to get \
+    more information on your faction, or **/help** to see important info and commands.";
+    ctx.say(message).await?;
     let mut user = db::users::get_user(ctx.author().id.to_string()).await;
     user.faction = tag;
     db::users::save_user(user)
         .await
         .expect("Failed to save user");
+    return Ok(());
+}
+
+#[poise::command(slash_command, prefix_command, ephemeral)]
+pub(crate) async fn info(ctx: Context<'_>) -> Result<(), Error> {
+    let user = db::users::get_user(ctx.author().id.to_string()).await;
+    if user.faction == "" {
+        ctx.say("You are not in a faction!").await?;
+        return Ok(());
+    }
+    let faction = db::factions::get_faction(user.faction.clone()).await;
+
+    let leader = db::users::get_user(faction.leader.clone()).await;
+
+    ctx.send(|e| {
+        e.embed(|embed| {
+            embed
+                .title(faction.name)
+                .description(faction.description)
+                .field("Tag", faction.tag, true)
+                .field("Leader", leader.username, true)
+                .field(
+                    "Population",
+                    faction.production.population.to_string(),
+                    true,
+                )
+                .field("Money", format!("${:.2}", faction.production.money), true)
+                .field("Food", format!("{}kg", faction.production.food), true)
+        })
+    })
+    .await?;
+
     return Ok(());
 }

@@ -9,7 +9,13 @@ pub(crate) async fn register(ctx: Context<'_>) -> Result<(), Error> {
         return Ok(());
     }
     let converted_user = convert_user(ctx.author()).await;
-    db::users::save_user(converted_user).await;
-    ctx.say("You have been registered!").await?;
+    db::users::save_user(converted_user)
+        .await
+        .expect("Failed to save user");
+    ctx.say(
+        "*And so your story begins...*\n\nIf this is \
+    your first time playing, you can use **/guide** to get a quick rundown on how to play.",
+    )
+    .await?;
     return Ok(());
 }

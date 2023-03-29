@@ -16,7 +16,23 @@ pub(crate) struct Faction {
     // The x coordinate of the faction capital
     pub(crate) capital_y: i32,
     // The y coordinate of the faction capital
+    pub(crate) production: Production,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub(crate) struct Production {
     pub(crate) money: f64,
     // The amount of money the faction has
-    pub(crate) money_per_tick: f64, // The amount of money the faction gets per second
+    pub(crate) money_per_second: f64,
+    // The amount of money the faction gets per second
+    pub(crate) population: i32,
+    // How many people live across the faction
+    pub(crate) population_per_second: f64,
+    // How many people the faction gets per second. We only actually increase this once an hour
+    pub(crate) food: f64,
+    // How much food the faction has
+    pub(crate) food_per_second: f64,
+    // How much food the faction gets per second
+    pub(crate) happiness: f64,
+    // How happy the faction is on a 1-100 scale
 }
