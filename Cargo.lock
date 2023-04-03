@@ -1015,6 +1015,7 @@ dependencies = [
  "mongodb",
  "noise",
  "poise",
+ "rand 0.8.5",
  "regex",
  "rust-embed",
  "rusttype",

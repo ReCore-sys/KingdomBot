@@ -9,19 +9,33 @@ use crate::types::map::Tile;
 use crate::{db, Context, Error};
 
 // The parent command. Doesn't really need to do anything.
-#[poise::command(slash_command, prefix_command, subcommands("position", "dev"))]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    subcommands("position", "dev", "capital")
+)]
 pub(crate) async fn map(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
 // The user-facing command. This is the one that gets called when the user types /map position
 // it calls on the create_reply function to get the image, but ignores the message
-#[poise::command(slash_command, prefix_command, ephemeral)]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    ephemeral,
+    description_localized("en-US", "Get a map of the world around you")
+)]
 pub(crate) async fn position(
     ctx: Context<'_>,
     #[description = "X coordinate of the centre tile"] x: i32,
     #[description = "Y coordinate of the centre tile"] y: i32,
 ) -> Result<(), Error> {
+    if !db::users::user_exists(ctx.author().id.to_string()).await {
+        ctx.say("You need to register first!\nUse `/register` to join!")
+            .await?;
+        return Ok(());
+    }
     ctx.defer().await?;
     let (file, _) = create_reply(x, y).await?;
     let attachment = AttachmentType::File {
@@ -34,12 +48,23 @@ pub(crate) async fn position(
 }
 
 // Same as the position command, but this one sends the message as well
-#[poise::command(slash_command, prefix_command, track_edits, ephemeral)]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    track_edits,
+    ephemeral,
+    description_localized("en-US", "Same as /map position, but has extra debug info")
+)]
 pub(crate) async fn dev(
     ctx: Context<'_>,
     #[description = "X coordinate of the centre tile"] x: i32,
     #[description = "Y coordinate of the centre tile"] y: i32,
 ) -> Result<(), Error> {
+    if !db::users::user_exists(ctx.author().id.to_string()).await {
+        ctx.say("You need to register first!\nUse `/register` to join!")
+            .await?;
+        return Ok(());
+    }
     ctx.defer().await?;
     let (file, dev_message) = create_reply(x, y).await?;
     let mut send_message = dev_message;
@@ -57,6 +82,43 @@ pub(crate) async fn dev(
 
     ctx.send(|b| b.attachment(attachment).content(send_message))
         .await?;
+    Ok(())
+}
+
+#[poise::command(
+    slash_command,
+    prefix_command,
+    track_edits,
+    ephemeral,
+    description_localized("en-US", "Automatically gets the map of your faction's capital")
+)]
+pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
+    if !db::users::user_exists(ctx.author().id.to_string()).await {
+        ctx.say("You need to register first!\nUse `/register` to join!")
+            .await?;
+        return Ok(());
+    }
+    if db::users::get_user(ctx.author().id.to_string())
+        .await
+        .faction
+        == ""
+    {
+        ctx.say("You aren't in a faction yet!").await?;
+        return Ok(());
+    }
+    ctx.defer().await?;
+    let faction_tag = db::users::get_user(ctx.author().id.to_string())
+        .await
+        .faction;
+    let faction = db::factions::get_faction(faction_tag).await;
+    let (x, y) = (faction.capital_x, faction.capital_y);
+    let (file, _) = create_reply(x, y).await?;
+    let attachment = AttachmentType::File {
+        file: &file,
+        filename: "map.png".to_string(),
+    };
+
+    ctx.send(|b| b.attachment(attachment)).await?;
     Ok(())
 }
 

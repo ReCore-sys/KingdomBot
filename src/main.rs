@@ -1,6 +1,7 @@
-use commands::map::map;
 use poise::serenity_prelude as serenity;
 use rust_embed::RustEmbed;
+
+use commands::map::map;
 
 use crate::commands::faction::faction;
 use crate::commands::help::{explain, guide};

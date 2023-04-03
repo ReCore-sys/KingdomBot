@@ -4,7 +4,7 @@ use noise::{Clamp, NoiseFn, OpenSimplex};
 use rusttype::{Font, Scale};
 
 use crate::config::get_config;
-use crate::{map, types};
+use crate::types;
 
 const TILE_SIZE: i32 = 150;
 const BORDER_SIZE: i32 = 5;

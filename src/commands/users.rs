@@ -2,7 +2,12 @@ use crate::conversions::convert_user;
 use crate::db;
 use crate::{Context, Error};
 
-#[poise::command(slash_command, prefix_command, ephemeral)]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    ephemeral,
+    description_localized("en-US", "Register yourself to play the game!")
+)]
 pub(crate) async fn register(ctx: Context<'_>) -> Result<(), Error> {
     if db::users::user_exists(ctx.author().id.to_string()).await {
         ctx.say("You are already registered!").await?;

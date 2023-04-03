@@ -1,5 +1,5 @@
-use mongodb::options::ClientOptions;
 use mongodb::{Client, Database};
+use mongodb::options::ClientOptions;
 
 #[path = "database/factions.rs"]
 pub(crate) mod factions;

@@ -1,4 +1,9 @@
+use poise::serenity_prelude::User as SerenityUser;
+
+use crate::commands::faction::FactionModal;
+use crate::types::factions::Faction;
 use crate::types::map::Tile;
+use crate::types::users::User;
 
 pub fn bytes_to_string(bytes: u64) -> String {
     let mut bytes = bytes as f64;
@@ -25,11 +30,6 @@ pub fn split_tiles(tiles: Vec<Tile>, size: i32) -> Vec<Vec<Tile>> {
     tile_rows
 }
 
-use crate::commands::faction::FactionModal;
-use crate::types::factions::Faction;
-use crate::types::users::User;
-use poise::serenity_prelude::User as SerenityUser;
-
 pub(crate) async fn convert_user(user: &SerenityUser) -> User {
     User {
         uuid: user.id.to_string(),
@@ -39,10 +39,10 @@ pub(crate) async fn convert_user(user: &SerenityUser) -> User {
     }
 }
 
-pub(crate) async fn modal_to_faction(modal: FactionModal) -> Faction {
+pub(crate) async fn modal_to_faction(modal: &FactionModal) -> Faction {
     let mut faction = Faction::default();
-    faction.name = modal.faction_name;
-    faction.description = modal.faction_description;
+    faction.name = modal.faction_name.clone();
+    faction.description = modal.faction_description.clone();
     faction.tag = modal.faction_tag.to_uppercase();
     faction
 }

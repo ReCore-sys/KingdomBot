@@ -4,13 +4,23 @@ use regex::Regex;
 
 use crate::{Context, Error};
 
-#[poise::command(slash_command, prefix_command, ephemeral)]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    ephemeral,
+    description_localized("en-US", "Walks you through how the game works")
+)]
 pub(crate) async fn guide(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say(crate::GUIDE_MESSAGE).await?;
     return Ok(());
 }
 
-#[poise::command(slash_command, prefix_command, ephemeral)]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    ephemeral,
+    description_localized("en-US", "Explains a topic")
+)]
 pub(crate) async fn explain(
     ctx: Context<'_>,
     #[name_localized("en-US", "topic")]

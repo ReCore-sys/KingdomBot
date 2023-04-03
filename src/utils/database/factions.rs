@@ -1,9 +1,10 @@
-use crate::db;
-use crate::types::factions::Faction;
 use futures::TryStreamExt;
 use mongodb::bson::doc;
-use mongodb::options::FindOptions;
 use mongodb::Database;
+use mongodb::options::FindOptions;
+
+use crate::db;
+use crate::types::factions::Faction;
 
 pub(crate) async fn get_faction(tag: String) -> Faction {
     let db = db::get_db().await;
