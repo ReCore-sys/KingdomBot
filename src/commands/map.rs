@@ -37,7 +37,10 @@ pub(crate) async fn position(
         return Ok(());
     }
     ctx.defer().await?;
-    let (file, _) = create_reply(x, y).await?;
+    let tag = db::users::get_user(ctx.author().id.to_string())
+        .await
+        .faction;
+    let (file, _) = create_reply(x, y, tag).await?;
     let attachment = AttachmentType::File {
         file: &file,
         filename: "map.png".to_string(),
@@ -66,7 +69,10 @@ pub(crate) async fn dev(
         return Ok(());
     }
     ctx.defer().await?;
-    let (file, dev_message) = create_reply(x, y).await?;
+    let tag = db::users::get_user(ctx.author().id.to_string())
+        .await
+        .faction;
+    let (file, dev_message) = create_reply(x, y, tag).await?;
     let mut send_message = dev_message;
     // Since the file was created in the create_reply function, get the size here
     // We could get it in the function, but that means we have to open the file twice and it's
@@ -110,9 +116,9 @@ pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
     let faction_tag = db::users::get_user(ctx.author().id.to_string())
         .await
         .faction;
-    let faction = db::factions::get_faction(faction_tag).await;
+    let faction = db::factions::get_faction(faction_tag.clone()).await;
     let (x, y) = (faction.capital_x, faction.capital_y);
-    let (file, _) = create_reply(x, y).await?;
+    let (file, _) = create_reply(x, y, faction_tag).await?;
     let attachment = AttachmentType::File {
         file: &file,
         filename: "map.png".to_string(),
@@ -123,7 +129,7 @@ pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 // This is the function that actually does all the work. Creates the image and the status message
-async fn create_reply(x: i32, y: i32) -> Result<(File, String), Error> {
+async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String), Error> {
     let mut dev_message = String::new();
     let mut tiles: Vec<Vec<Tile>> = Vec::new();
     let offset_base = crate::image::VIEW_DISTANCE / 2; // How far to go in each direction
@@ -180,7 +186,8 @@ async fn create_reply(x: i32, y: i32) -> Result<(File, String), Error> {
     // Record the time it takes to generate the map
     let mut start = std::time::Instant::now();
     tiles = invert_y(tiles).await;
-    let image = crate::image::draw_map(&tiles).await;
+
+    let image = crate::image::draw_map(&tiles, faction).await;
     dev_message.push_str(&format!(
         "Map generated in {}ms",
         start.elapsed().as_millis()

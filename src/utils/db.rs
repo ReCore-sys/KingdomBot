@@ -1,9 +1,9 @@
-use mongodb::{Client, Database};
 use mongodb::options::ClientOptions;
-
+use mongodb::{Client, Database};
 #[path = "database/factions.rs"]
 pub(crate) mod factions;
 #[path = "database/tiles.rs"]
+#[allow(dead_code)]
 pub(crate) mod tiles;
 #[path = "database/users.rs"]
 pub(crate) mod users;

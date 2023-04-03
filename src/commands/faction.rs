@@ -3,10 +3,13 @@ use rand::Rng;
 use regex::Regex;
 
 use crate::conversions::modal_to_faction;
+use crate::db::tiles::blank_tile;
 use crate::image::VIEW_DISTANCE;
+use crate::types::buildings::Building;
 use crate::{db, Context, Data, Error};
 
 const CAPITAL_PLACE_RANGE: i32 = VIEW_DISTANCE * 3;
+const INFO_INLINE: bool = true;
 
 type ApplicationContext<'a> = poise::ApplicationContext<'a, Data, Error>;
 
@@ -130,6 +133,19 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
     db::factions::save_faction(converted_data)
         .await
         .expect("Failed to save faction");
+    let mut faction_tile = blank_tile(faction_location.0, faction_location.1).await;
+    faction_tile.faction = tag.clone();
+    faction_tile.occupied = true;
+    let insert_result = faction_tile.buildings.insert(Building::Capital, 1);
+    if insert_result.is_some() {
+        panic!(
+            "Failed to insert building into tile! Capital already exists? Tried to set at {}, {}",
+            faction_location.0, faction_location.1
+        );
+    }
+    db::tiles::set_tile(faction_tile)
+        .await
+        .expect("Failed to save tile");
     let message = "*The seeds of a mighty empire have been sown...*\n\nFeel free to use the **/info** command to get \
     more information on your faction, or **/help** to see important info and commands.";
     ctx.say(message).await?;
@@ -162,15 +178,28 @@ pub(crate) async fn info(ctx: Context<'_>) -> Result<(), Error> {
             embed
                 .title(faction.name)
                 .description(faction.description)
-                .field("Tag", faction.tag, true)
-                .field("Leader", leader.username, true)
+                .field("Tag", faction.tag, INFO_INLINE)
+                .field(
+                    "Capital location",
+                    format!("{}, {}", faction.capital_x, faction.capital_y),
+                    INFO_INLINE,
+                )
+                .field("Leader", leader.username, INFO_INLINE)
                 .field(
                     "Population",
                     faction.production.population.to_string(),
-                    true,
+                    INFO_INLINE,
                 )
-                .field("Money", format!("${:.2}", faction.production.money), true)
-                .field("Food", format!("{}kg", faction.production.food), true)
+                .field(
+                    "Money",
+                    format!("${:.2}", faction.production.money),
+                    INFO_INLINE,
+                )
+                .field(
+                    "Food",
+                    format!("{}kg", faction.production.food),
+                    INFO_INLINE,
+                )
         })
     })
     .await?;

@@ -14,7 +14,10 @@ const PIXEL_CLUMPING: i32 = 35;
 const TEXT_SCALE: f32 = 75.0;
 const LETTER_WIDTH: i32 = 30;
 
-pub async fn draw_map(grid: &Vec<Vec<types::map::Tile>>) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+pub async fn draw_map(
+    grid: &Vec<Vec<types::map::Tile>>,
+    faction: String,
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
     // draw a 2d grid of tiles based off the vector of vectors given
     // draw each tile as TILE_SIZE * TILE_SIZE pixels with a BORDER_SIZE pixel border
     // if the tile is occupied, draw the border as red, otherwise draw it as black
@@ -67,7 +70,11 @@ pub async fn draw_map(grid: &Vec<Vec<types::map::Tile>>) -> ImageBuffer<Rgb<u8>,
     for x in 0..grid.len() as i32 {
         for y in 0..grid[x as usize].len() as i32 {
             let color = if grid[x as usize][y as usize].occupied {
-                Rgb([255, 0, 0])
+                if faction == grid[x as usize][y as usize].faction {
+                    Rgb([135, 206, 235])
+                } else {
+                    Rgb([255, 0, 0])
+                }
             } else {
                 Rgb([0, 0, 0])
             };
