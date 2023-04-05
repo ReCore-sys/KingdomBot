@@ -6,7 +6,8 @@ use commands::map::map;
 use crate::commands::faction::faction;
 use crate::commands::help::{explain, guide};
 use crate::commands::map::create_tile;
-use crate::commands::users::register;
+use crate::commands::tile::tile;
+use crate::commands::user::register;
 
 mod commands;
 #[path = "utils/config.rs"]
@@ -45,6 +46,7 @@ async fn main() {
                 register(),
                 guide(),
                 explain(),
+                tile(),
             ], // for some reason intellij is complaining about this line, but it works fine
             ..Default::default()
         })

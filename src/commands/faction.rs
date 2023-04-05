@@ -6,6 +6,7 @@ use crate::conversions::modal_to_faction;
 use crate::db::tiles::blank_tile;
 use crate::image::VIEW_DISTANCE;
 use crate::types::buildings::Building;
+use crate::types::units::Unit;
 use crate::{db, Context, Data, Error};
 
 const CAPITAL_PLACE_RANGE: i32 = VIEW_DISTANCE * 3;
@@ -136,6 +137,7 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
     let mut faction_tile = blank_tile(faction_location.0, faction_location.1).await;
     faction_tile.faction = tag.clone();
     faction_tile.occupied = true;
+    faction_tile.units.insert(Unit::Citizen, 100);
     let insert_result = faction_tile.buildings.insert(Building::Capital, 1);
     if insert_result.is_some() {
         panic!(
@@ -146,8 +148,11 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
     db::tiles::set_tile(faction_tile)
         .await
         .expect("Failed to save tile");
-    let message = "*The seeds of a mighty empire have been sown...*\n\nFeel free to use the **/info** command to get \
-    more information on your faction, or **/help** to see important info and commands.";
+    let message = format!("*The seeds of a mighty empire have been sown...*\n\nYour capital has been built at \
+    {}, {} and a small group of settlers have moved in. \
+     You need to grow and defend your empire, but to do that you will need buildings, troops and resources to keep your \
+     people happy and to fend off the other factions.\n\nBest of luck and may you prosper!", faction_location.0, faction_location.1);
+
     ctx.say(message).await?;
     let mut user = db::users::get_user(ctx.author().id.to_string()).await;
     user.faction = tag.clone();

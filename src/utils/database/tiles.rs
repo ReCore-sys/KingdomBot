@@ -4,6 +4,7 @@ use mongodb::options::FindOptions;
 use mongodb::Database;
 
 use crate::db;
+use crate::image::VIEW_DISTANCE;
 use crate::types::map::Tile;
 
 /// Gets a tile. Uses a pre-existing database connection
@@ -308,4 +309,33 @@ pub async fn invert_y(tiles: Vec<Vec<Tile>>) -> Vec<Vec<Tile>> {
         new_tiles.push(new_row);
     }
     new_tiles
+}
+
+/// Checks to see if a faction is able to see a tile. This just boils down to checking if there are
+/// any tiles in VIEW_DISTANCE of the specified tile that are owned by that faction
+///
+/// # Arguments
+///
+/// * `x` - The x value of the tile
+/// * `y` - The y value of the tile
+/// * `faction` - The faction trying to see the tile
+///
+/// # Returns
+/// ```boolean```: Whether or not that faction is allowed to see the tile
+///
+
+pub async fn can_faction_see(x: i32, y: i32, faction: String) -> bool {
+    let x_range = (x - VIEW_DISTANCE, x + VIEW_DISTANCE);
+    let y_range = (y - VIEW_DISTANCE, y + VIEW_DISTANCE);
+    let any_tiles_in_range = db::tiles::any_exist(x_range, y_range).await;
+    if !any_tiles_in_range {
+        return false;
+    }
+    let tiles = db::tiles::get_many(x_range, y_range).await;
+    for tile in tiles {
+        if tile.faction == faction {
+            return true;
+        }
+    }
+    false
 }

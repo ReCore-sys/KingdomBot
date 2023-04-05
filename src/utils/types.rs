@@ -4,5 +4,7 @@ pub(crate) mod buildings;
 pub(crate) mod factions;
 #[path = "types/map.rs"]
 pub(crate) mod map;
+#[path = "types/units.rs"]
+pub(crate) mod units;
 #[path = "types/users.rs"]
 pub(crate) mod users;
