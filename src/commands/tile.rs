@@ -14,18 +14,22 @@ pub(crate) async fn tile(_: Context<'_>) -> Result<(), Error> {
 pub(crate) async fn info(ctx: Context<'_>, x: i32, y: i32) -> Result<(), Error> {
     let cant_see_message = "You can't see that tile!";
     let faction = db::users::get_user(ctx.author().id.to_string())
-        .await
+        .await?
         .faction;
-    let can_see = db::tiles::can_faction_see(x, y, faction).await;
+    let can_see = db::tiles::can_faction_see(x, y, faction).await?;
     if !can_see {
         ctx.say(cant_see_message).await?;
         return Ok(());
     }
-    let tile = db::tiles::get_tile(x, y).await;
+    let tile = if db::tiles::check_tile(x, y).await? {
+        db::tiles::get_tile(x, y).await?
+    } else {
+        db::tiles::blank_tile(x, y).await
+    };
     let mut owner = "None".to_string();
     if tile.faction != "" {
         owner = db::factions::get_faction(tile.faction.clone())
-            .await
+            .await?
             .name
             .clone();
     }

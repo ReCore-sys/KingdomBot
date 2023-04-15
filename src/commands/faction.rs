@@ -6,6 +6,7 @@ use crate::conversions::modal_to_faction;
 use crate::db::tiles::blank_tile;
 use crate::image::VIEW_DISTANCE;
 use crate::types::buildings::Building;
+use crate::types::permissions::Permissions;
 use crate::types::units::Unit;
 use crate::{db, Context, Data, Error};
 
@@ -45,13 +46,13 @@ pub(crate) struct FactionModal {
     description_localized("en-US", "If you aren't already in one, create a faction!")
 )]
 pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
-    if !db::users::user_exists(ctx.author().id.to_string()).await {
+    if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
         return Ok(());
     }
     if db::users::get_user(ctx.author().id.to_string())
-        .await
+        .await?
         .faction
         != ""
     {
@@ -76,7 +77,7 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
         let y = captures.get(2).unwrap().as_str().parse::<i32>().unwrap();
         let y_range = (y + CAPITAL_PLACE_RANGE, y - CAPITAL_PLACE_RANGE);
         let x_range = (x + CAPITAL_PLACE_RANGE, x - CAPITAL_PLACE_RANGE);
-        let valid = !db::tiles::any_exist(x_range, y_range).await;
+        let valid = !db::tiles::any_exist(x_range, y_range).await?;
         if !valid {
             ctx.say("That location is too close to an existing faction!")
                 .await?;
@@ -96,7 +97,7 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
                 let y = random_generator.gen_range(-distance..distance);
                 let y_range = (y + CAPITAL_PLACE_RANGE, y - CAPITAL_PLACE_RANGE);
                 let x_range = (x + CAPITAL_PLACE_RANGE, x - CAPITAL_PLACE_RANGE);
-                let valid = !db::tiles::any_exist(x_range, y_range).await;
+                let valid = !db::tiles::any_exist(x_range, y_range).await?;
                 if valid {
                     faction_location = (x, y);
                     break;
@@ -108,7 +109,7 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
                 let y = if top_or_left { distance } else { -distance };
                 let y_range = (y + CAPITAL_PLACE_RANGE, y - CAPITAL_PLACE_RANGE);
                 let x_range = (x + CAPITAL_PLACE_RANGE, x - CAPITAL_PLACE_RANGE);
-                let valid = !db::tiles::any_exist(x_range, y_range).await;
+                let valid = !db::tiles::any_exist(x_range, y_range).await?;
                 if valid {
                     faction_location = (x, y);
                     break;
@@ -154,8 +155,9 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
      people happy and to fend off the other factions.\n\nBest of luck and may you prosper!", faction_location.0, faction_location.1);
 
     ctx.say(message).await?;
-    let mut user = db::users::get_user(ctx.author().id.to_string()).await;
+    let mut user = db::users::get_user(ctx.author().id.to_string()).await?;
     user.faction = tag.clone();
+    user.permissions.push(Permissions::Leader);
     db::users::save_user(user)
         .await
         .expect("Failed to save user");
@@ -169,14 +171,14 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
     description_localized("en-US", "Get information about your faction")
 )]
 pub(crate) async fn info(ctx: Context<'_>) -> Result<(), Error> {
-    let user = db::users::get_user(ctx.author().id.to_string()).await;
+    let user = db::users::get_user(ctx.author().id.to_string()).await?;
     if user.faction == "" {
         ctx.say("You are not in a faction!").await?;
         return Ok(());
     }
-    let faction = db::factions::get_faction(user.faction.clone()).await;
+    let faction = db::factions::get_faction(user.faction.clone()).await?;
 
-    let leader = db::users::get_user(faction.leader.clone()).await;
+    let leader = db::users::get_user(faction.leader.clone()).await?;
 
     ctx.send(|e| {
         e.embed(|embed| {

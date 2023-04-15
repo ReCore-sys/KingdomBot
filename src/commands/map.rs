@@ -31,14 +31,14 @@ pub(crate) async fn position(
     #[description = "X coordinate of the centre tile"] x: i32,
     #[description = "Y coordinate of the centre tile"] y: i32,
 ) -> Result<(), Error> {
-    if !db::users::user_exists(ctx.author().id.to_string()).await {
+    if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
         return Ok(());
     }
     ctx.defer().await?;
     let tag = db::users::get_user(ctx.author().id.to_string())
-        .await
+        .await?
         .faction;
     let (file, _) = create_reply(x, y, tag).await?;
     let attachment = AttachmentType::File {
@@ -63,14 +63,14 @@ pub(crate) async fn dev(
     #[description = "X coordinate of the centre tile"] x: i32,
     #[description = "Y coordinate of the centre tile"] y: i32,
 ) -> Result<(), Error> {
-    if !db::users::user_exists(ctx.author().id.to_string()).await {
+    if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
         return Ok(());
     }
     ctx.defer().await?;
     let tag = db::users::get_user(ctx.author().id.to_string())
-        .await
+        .await?
         .faction;
     let (file, dev_message) = create_reply(x, y, tag).await?;
     let mut send_message = dev_message;
@@ -99,13 +99,13 @@ pub(crate) async fn dev(
     description_localized("en-US", "Automatically gets the map of your faction's capital")
 )]
 pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
-    if !db::users::user_exists(ctx.author().id.to_string()).await {
+    if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
         return Ok(());
     }
     if db::users::get_user(ctx.author().id.to_string())
-        .await
+        .await?
         .faction
         == ""
     {
@@ -114,9 +114,9 @@ pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
     }
     ctx.defer().await?;
     let faction_tag = db::users::get_user(ctx.author().id.to_string())
-        .await
+        .await?
         .faction;
-    let faction = db::factions::get_faction(faction_tag.clone()).await;
+    let faction = db::factions::get_faction(faction_tag.clone()).await?;
     let (x, y) = (faction.capital_x, faction.capital_y);
     let (file, _) = create_reply(x, y, faction_tag).await?;
     let attachment = AttachmentType::File {
@@ -139,18 +139,18 @@ async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String),
     let offset_y_max = y + offset_base;
     let x_range = (offset_x_min, offset_x_max);
     let y_range = (offset_y_min, offset_y_max);
-    let tiles_exist = tiles::all_exist(x_range, y_range).await;
+    let tiles_exist = tiles::all_exist(x_range, y_range).await?;
     dev_message.push_str("Saved tiles: ");
     // Check if all tiles exist
     if tiles_exist {
         dev_message.push_str("100%");
         // If they do, get them from the database
-        let flat_tiles = tiles::get_many(x_range, y_range).await;
+        let flat_tiles = tiles::get_many(x_range, y_range).await?;
         println!("{} tiles", flat_tiles.len());
         tiles = split_tiles(flat_tiles, crate::image::VIEW_DISTANCE);
     } else {
         // First see if any tiles exist
-        if !tiles::any_exist(x_range, y_range).await {
+        if !tiles::any_exist(x_range, y_range).await? {
             // If they don't, it's easier to just make a load of blank tiles
             dev_message.push_str("0%");
             let empty_tiles = tiles::blank_tile_range(x_range, y_range).await;
@@ -160,16 +160,16 @@ async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String),
             // generate the rest
             let max_tiles = crate::image::VIEW_DISTANCE * crate::image::VIEW_DISTANCE;
             let mut tiles_exist = 0;
-            let database = db::get_db().await;
+            let database = db::get_db().await?;
             for x in offset_x_min..offset_x_max {
                 let mut tile_row: Vec<Tile> = Vec::new();
                 for y in offset_y_min..offset_y_max {
                     let current_tile: Tile;
-                    if !tiles::internal_check_tile(&database, x, y).await {
+                    if !tiles::internal_check_tile(&database, x, y).await? {
                         current_tile = blank_tile(x, y).await;
                     } else {
                         tiles_exist += 1;
-                        current_tile = tiles::internal_get_tile(&database, x, y).await;
+                        current_tile = tiles::internal_get_tile(&database, x, y).await?;
                     }
                     tile_row.push(current_tile);
                 }
@@ -206,28 +206,4 @@ async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String),
     ));
     let file = File::open("map.png").await?;
     Ok((file, dev_message))
-}
-
-#[poise::command(slash_command, prefix_command)]
-pub(crate) async fn create_tile(
-    ctx: Context<'_>,
-    #[description = "X coordinate of the tile"] x: i32,
-    #[description = "Y coordinate of the tile"] y: i32,
-) -> Result<(), Error> {
-    if ctx
-        .author_member()
-        .await
-        .unwrap()
-        .permissions
-        .unwrap()
-        .administrator()
-    {
-        let tile = blank_tile(x, y).await;
-        tiles::set_tile(tile).await.expect("Failed to set tile");
-        ctx.say("Tile created").await?;
-    } else {
-        ctx.say("You do not have permission to use this command")
-            .await?;
-    }
-    Ok(())
 }

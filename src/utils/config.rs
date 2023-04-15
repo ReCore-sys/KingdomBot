@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub(crate) discord_token: String,
     pub(crate) perlin_seed: u32,
+    pub(crate) db_username: String,
+    pub(crate) db_password: String,
 }
 
 pub fn get_config() -> Config {

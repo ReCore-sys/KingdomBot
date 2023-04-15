@@ -1,8 +1,10 @@
 use poise::serenity_prelude::User as SerenityUser;
 
 use crate::commands::faction::FactionModal;
+use crate::types::buildings::Building;
 use crate::types::factions::Faction;
 use crate::types::map::Tile;
+use crate::types::units::Unit;
 use crate::types::users::User;
 
 pub fn bytes_to_string(bytes: u64) -> String {
@@ -36,6 +38,7 @@ pub(crate) async fn convert_user(user: &SerenityUser) -> User {
         username: user.name.clone(),
         discriminator: user.discriminator.to_string(),
         faction: "".to_string(),
+        permissions: Vec::new(),
     }
 }
 
@@ -45,4 +48,36 @@ pub(crate) async fn modal_to_faction(modal: &FactionModal) -> Faction {
     faction.description = modal.faction_description.clone();
     faction.tag = modal.faction_tag.to_uppercase();
     faction
+}
+
+pub(crate) async fn string_to_unit(string: &String) -> Result<Unit, bool> {
+    match string.as_str() {
+        "citizen" => Ok(Unit::Citizen),
+        "soldier" => Ok(Unit::Soldier),
+        "cavalry" => Ok(Unit::Cavalry),
+        "ranger" => Ok(Unit::Ranger),
+        "knight" => Ok(Unit::Knight),
+        "scout" => Ok(Unit::Scout),
+        _ => Err(false),
+    }
+}
+
+/// Converts a string to a building
+///
+/// # Arguments
+///
+/// * `string`: The name of the building to get
+///
+/// returns: Result<Building, bool>
+pub(crate) async fn string_to_building(string: &String) -> Result<Building, bool> {
+    match string.to_lowercase().as_str() {
+        "farm" => Ok(Building::Farm),
+        "blacksmith" => Ok(Building::Blacksmith),
+        "mill" => Ok(Building::Mill),
+        "barracks" => Ok(Building::Barracks),
+        "hut" => Ok(Building::Hut),
+        "house" => Ok(Building::House),
+        "capital" => Ok(Building::Capital),
+        _ => Err(false),
+    }
 }

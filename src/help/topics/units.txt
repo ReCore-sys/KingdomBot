@@ -1,0 +1,30 @@
+Units refer to any troops or population that are inhabiting a tile.
+Units can be moved around the map, and can be used to fight and build.
+There are currently 6 types of units in the game, each with their own uses.
+
+**Citizen**
+These units are your population. They have no combat ability, but can be used to build buildings and work tiles.
+Unlike the other units, they don't need to be trained and will automatically generate over time based on your current population.
+To construct buildings, you must have at least 1 citizen unit on the tile you want to build on.
+Due to having no combat training, citizen units will die if they are attacked by enemy units and won't be able to fight back.
+
+**Soldier**
+These units are your basic combat units. They can be trained at the barracks, and are used to fight in combat.
+They aren't very strong, but are cheap to train and can be used to defend your cities.
+They can kill civilian units, but won't fair well against most other unit types.
+
+**Cavalry**
+These guys are fast and very effective against soldiers. While they are more expensive to train, they are also much stronger.
+Due to being much faster, troop movements of only cavalry units are much faster than other unit types.
+
+**Ranger**
+Long range units that are very effective against soldiers and cavalry. Due to the long range, cavalry units don't stand a chance and are shot down before they can get close.
+Unfortunately, they are very expensive to train and can't get through a Knight's heavy armor.
+
+**Knight**
+These guys are extremely durable and only weak to other knights. They are very expensive to train, but are very effective against all other unit types.
+They are also very slow, so they can't move around the map as fast as other units.
+
+**Scout**
+While they have limited fighting ability, they are very useful for scouting out enemy territory.
+They can move extremely fast on their own so they can be used to quickly move around the map.

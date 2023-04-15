@@ -3,9 +3,11 @@ use rust_embed::RustEmbed;
 
 use commands::map::map;
 
+use crate::commands::build::build;
+use crate::commands::dev::dev;
 use crate::commands::faction::faction;
 use crate::commands::help::{explain, guide};
-use crate::commands::map::create_tile;
+use crate::commands::r#move::move_troops;
 use crate::commands::tile::tile;
 use crate::commands::user::register;
 
@@ -41,12 +43,14 @@ async fn main() {
         .options(poise::FrameworkOptions {
             commands: vec![
                 map(),
-                create_tile(),
-                faction(),
-                register(),
+                dev(),
                 guide(),
                 explain(),
                 tile(),
+                move_troops(),
+                build(),
+                faction(),
+                register(),
             ], // for some reason intellij is complaining about this line, but it works fine
             ..Default::default()
         })

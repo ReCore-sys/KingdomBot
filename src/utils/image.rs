@@ -36,7 +36,7 @@ pub async fn draw_map(
         x: TEXT_SCALE,
         y: TEXT_SCALE,
     };
-    let font = Vec::from(include_bytes!("font.ttf") as &[u8]);
+    let font = Vec::from(include_bytes!("../font.ttf") as &[u8]);
     let font = Font::try_from_vec(font).unwrap();
 
     let clamp = Clamp::new(perlin).set_bounds(0.1, 0.4);

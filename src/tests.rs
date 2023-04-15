@@ -4,7 +4,7 @@ mod tests {
     use crate::image::hsv_to_rgb;
 
     #[test]
-    fn test_hsv2rgb() {
+    fn rgb() {
         let (r, g, b) = hsv_to_rgb(120.0, 31.4, 1.0);
         assert_eq!(r, 175);
         assert_eq!(g, 255);
@@ -19,3 +19,4 @@ mod tests {
         assert_eq!(b, 0);
     }
 }
+
