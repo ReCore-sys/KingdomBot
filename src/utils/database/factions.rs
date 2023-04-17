@@ -23,25 +23,21 @@ pub(crate) async fn internal_get_faction(
     Ok(all[0].clone())
 }
 
-pub(crate) async fn faction_exists(tag: String) -> bool {
-    let db = db::get_db().await;
-    if db.is_err() {
-        return false;
-    }
-    internal_faction_exists(&db.unwrap(), tag).await
+pub(crate) async fn faction_exists(tag: String) -> Result<bool, mongodb::error::Error> {
+    let db = db::get_db().await?;
+    internal_faction_exists(&db, tag).await
 }
 
-pub(crate) async fn internal_faction_exists(db: &Database, tag: String) -> bool {
+pub(crate) async fn internal_faction_exists(
+    db: &Database,
+    tag: String,
+) -> Result<bool, mongodb::error::Error> {
     let collection = db.collection::<Faction>("factions");
     let filter = doc! {"tag": tag};
     let options = FindOptions::builder().limit(1).build();
-    let cursor = collection.find(filter, options).await.unwrap();
-    let all: Vec<Faction> = cursor.try_collect().await.unwrap();
-    if all.len() == 0 {
-        false
-    } else {
-        true
-    }
+    let cursor = collection.find(filter, options).await?;
+    let all: Vec<Faction> = cursor.try_collect().await?;
+    Ok(all.len() > 0)
 }
 
 pub(crate) async fn save_faction(faction: Faction) -> Result<(), mongodb::error::Error> {
@@ -54,20 +50,13 @@ pub(crate) async fn internal_save_faction(
     faction: Faction,
 ) -> Result<(), mongodb::error::Error> {
     let collection = db.collection::<Faction>("factions");
-    if faction_exists(faction.tag.clone()).await {
+    if faction_exists(faction.tag.clone()).await? {
         let filter = doc! {"tag": faction.tag.clone()};
-        let err = collection.replace_one(filter, faction, None).await;
-        match err {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
+        collection.replace_one(filter, faction, None).await?;
     } else {
-        let err = collection.insert_one(faction, None).await;
-        match err {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
+        collection.insert_one(faction, None).await?;
     }
+    Ok(())
 }
 
 /// Get all factions. Creates a new connection to the database.
@@ -89,4 +78,19 @@ pub(crate) async fn set_many(factions: Vec<Faction>) -> Result<(), mongodb::erro
         save_faction(faction).await?;
     }
     Ok(())
+}
+
+pub(crate) async fn internal_delete_faction(
+    db: &Database,
+    tag: String,
+) -> Result<(), mongodb::error::Error> {
+    let collection = db.collection::<Faction>("factions");
+    let filter = doc! {"tag": tag};
+    collection.delete_one(filter, None).await?;
+    Ok(())
+}
+
+pub(crate) async fn delete_faction(tag: String) -> Result<(), mongodb::error::Error> {
+    let db = db::get_db().await?;
+    internal_delete_faction(&db, tag).await
 }

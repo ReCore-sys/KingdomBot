@@ -235,11 +235,7 @@ pub async fn get_many(
 
 pub async fn get_all() -> Result<Vec<Tile>, mongodb::error::Error> {
     let db = db::get_db().await?;
-    let cursor = db
-        .collection::<Tile>("tiles")
-        .find(None, None)
-        .await
-        .unwrap();
+    let cursor = db.collection::<Tile>("tiles").find(None, None).await?;
     let all: Vec<Tile> = cursor.try_collect().await?;
     Ok(all)
 }
@@ -366,13 +362,9 @@ pub async fn internal_delete_tile(
     y: i32,
 ) -> Result<(), mongodb::error::Error> {
     let filter = doc! {"x": x, "y": y};
-    let result = db
-        .collection::<Tile>("tiles")
+    db.collection::<Tile>("tiles")
         .delete_one(filter, None)
-        .await;
-    if result.is_err() {
-        return Err(result.err().unwrap());
-    }
+        .await?;
     Ok(())
 }
 

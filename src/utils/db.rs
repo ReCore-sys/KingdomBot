@@ -22,6 +22,7 @@ pub(crate) mod users;
 
 pub async fn get_db() -> Result<Database, mongodb::error::Error> {
     let mut client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
+    client_options.connect_timeout = Some(std::time::Duration::from_secs(1));
     client_options.app_name = Some("data".to_string());
     let client = Client::with_options(client_options)?;
     Ok(client.database("data"))

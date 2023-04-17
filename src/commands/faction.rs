@@ -120,7 +120,7 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
         }
     }
     let tag = &data.faction_tag.to_uppercase();
-    if db::factions::faction_exists(tag.clone()).await {
+    if db::factions::faction_exists(tag.clone()).await? {
         ctx.say("That faction tag is already taken!").await?;
         return Ok(());
     }
@@ -132,6 +132,7 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
     converted_data.production.happiness = 80.0;
     converted_data.capital_x = faction_location.0;
     converted_data.capital_y = faction_location.1;
+    converted_data.members.push(ctx.author().id.to_string());
     db::factions::save_faction(converted_data)
         .await
         .expect("Failed to save faction");

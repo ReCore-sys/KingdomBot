@@ -1,3 +1,4 @@
+use crate::types::factions::Faction;
 use crate::types::map::Tile;
 use crate::types::users::User;
 use crate::{db, Error};
@@ -46,6 +47,39 @@ pub(crate) async fn clean_tiles() -> Result<(), Error> {
     let conn = db::get_db().await?;
     for tile in to_delete {
         db::tiles::internal_delete_tile(&conn, tile.x, tile.y).await?;
+    }
+    Ok(())
+}
+
+pub(crate) async fn clean_factions() -> Result<(), Error> {
+    let factions = db::factions::get_all().await?;
+    let mut cleaned_factions: Vec<Faction> = Vec::new();
+    let mut to_delete: Vec<Faction> = Vec::new();
+
+    for faction in factions {
+        let mut cleaned_faction = faction.clone();
+        cleaned_faction.tag = cleaned_faction.tag.to_uppercase();
+        cleaned_faction.members.dedup();
+        let mut to_delete_faction = false;
+        if cleaned_faction.tag == "" {
+            to_delete_faction = true;
+        }
+        if cleaned_faction.name == "" {
+            to_delete_faction = true;
+        }
+        if cleaned_faction.members.len() == 0 {
+            to_delete_faction = true;
+        }
+        if to_delete_faction {
+            to_delete.push(cleaned_faction.clone());
+        } else {
+            cleaned_factions.push(cleaned_faction.clone());
+        }
+    }
+    db::factions::set_many(cleaned_factions).await?;
+    let conn = db::get_db().await?;
+    for faction in to_delete {
+        db::factions::internal_delete_faction(&conn, faction.tag).await?;
     }
     Ok(())
 }

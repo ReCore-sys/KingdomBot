@@ -20,6 +20,8 @@ mod conversions;
 mod db;
 #[path = "utils/image.rs"]
 mod image;
+#[path = "utils/misc_utils.rs"]
+mod misc;
 mod tests;
 #[path = "utils/types.rs"]
 mod types;
@@ -52,6 +54,17 @@ async fn main() {
                 faction(),
                 register(),
             ], // for some reason intellij is complaining about this line, but it works fine
+            on_error: |error| {
+                Box::pin(async move {
+                    error
+                        .ctx()
+                        .unwrap()
+                        .say(format!("Error: {}", error))
+                        .await
+                        .expect("Shit has really hit the fan");
+                    eprintln!("Error: {}", error)
+                })
+            },
             ..Default::default()
         })
         .token(config::get_config().discord_token)
