@@ -1,8 +1,6 @@
 use mongodb::options::ClientOptions;
 use mongodb::{Client, Database};
 
-use crate::Error;
-
 #[path = "database/cleaners.rs"]
 pub(crate) mod cleaners;
 #[path = "database/factions.rs"]

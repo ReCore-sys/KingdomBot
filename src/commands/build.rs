@@ -1,5 +1,6 @@
 use crate::conversions::string_to_building;
 use crate::types::buildings::Building;
+use crate::types::permissions::Permissions;
 use crate::{db, Context, Error};
 
 #[poise::command(
@@ -15,6 +16,12 @@ pub(crate) async fn build(
     #[description_localized("en-US", "The x coordinate of the tile to build on")] x: i32,
     #[description_localized("en-US", "The y coordinate of the tile to build on")] y: i32,
 ) -> Result<(), Error> {
+    let user = db::users::get_user(ctx.author().id.to_string()).await?;
+    if !user.permitted(Permissions::Build) {
+        ctx.say("You don't have permission to build!").await?;
+        return Ok(());
+    }
+
     if amount == 0 {
         ctx.say("You can't build nothing!").await?;
         return Ok(());

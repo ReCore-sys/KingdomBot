@@ -1,5 +1,6 @@
 use futures::TryStreamExt;
 use mongodb::bson::doc;
+
 use mongodb::options::FindOptions;
 use mongodb::Database;
 
@@ -15,6 +16,10 @@ pub(crate) async fn internal_get_faction(
     db: &Database,
     tag: String,
 ) -> Result<Faction, mongodb::error::Error> {
+    if !internal_faction_exists(db, tag.clone()).await? {
+        error!("Faction {} does not exist", tag);
+        panic!("Faction {} does not exist", tag)
+    }
     let collection = db.collection::<Faction>("factions");
     let filter = doc! {"tag": tag};
     let options = FindOptions::builder().limit(1).build();

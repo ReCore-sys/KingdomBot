@@ -4,9 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[profile.dev.package.imageproc]
-opt-level = 3
-[profile.dev.package.image]
+[profile.dev.package."*"]
 opt-level = 3
 [profile.release]
 lto = true
@@ -22,9 +20,13 @@ tokio = { version = "1.26.0", features = ["rt", "rt-multi-thread"] }
 mongodb = "2.4.0"
 futures = "0.3"
 noise = "0.8.2"
-imageproc = "0.23.0"
+imageproc = { version = "0.23.0", features = ["rayon"] }
 image = "0.24.5"
 rusttype = "0.9.3"
 rust-embed = "6.6.0"
 regex = "1"
 rand = "0.8.5"
+dashmap = "5.4.0"
+log = "0.4"
+pretty_env_logger = "0.4"
+atomic-counter = "1.0.1"

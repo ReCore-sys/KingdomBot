@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use poise::serenity_prelude as serenity;
 use rust_embed::RustEmbed;
 
@@ -40,7 +43,8 @@ const GUIDE_MESSAGE: &str = include_str!("help/guide.txt");
 
 #[tokio::main]
 async fn main() {
-    println!("Starting bot...");
+    pretty_env_logger::init();
+    info!("Starting bot...");
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
@@ -62,7 +66,7 @@ async fn main() {
                         .say(format!("Error: {}", error))
                         .await
                         .expect("Shit has really hit the fan");
-                    eprintln!("Error: {}", error)
+                    error!("Error: {}", error)
                 })
             },
             ..Default::default()
@@ -74,10 +78,10 @@ async fn main() {
                 ctx.set_activity(serenity::Activity::playing("with the map"))
                     .await;
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                println!("Bot started.");
+                info!("Bot started.");
                 Ok(Data {})
             })
         });
     framework.run().await.unwrap();
-    println!("Bot stopped.")
+    warn!("Bot stopped.")
 }

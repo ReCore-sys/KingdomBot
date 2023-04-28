@@ -1,5 +1,6 @@
+use std::io::Cursor;
+
 use poise::serenity_prelude::AttachmentType;
-use tokio::fs::File;
 
 use db::tiles;
 
@@ -40,9 +41,10 @@ pub(crate) async fn position(
     let tag = db::users::get_user(ctx.author().id.to_string())
         .await?
         .faction;
-    let (file, _) = create_reply(x, y, tag).await?;
-    let attachment = AttachmentType::File {
-        file: &file,
+    let (data, _) = create_reply(x, y, tag).await?;
+
+    let attachment = AttachmentType::Bytes {
+        data: std::borrow::Cow::Owned(data.into_inner()),
         filename: "map.png".to_string(),
     };
 
@@ -72,17 +74,17 @@ pub(crate) async fn dev(
     let tag = db::users::get_user(ctx.author().id.to_string())
         .await?
         .faction;
-    let (file, dev_message) = create_reply(x, y, tag).await?;
+    let (data, dev_message) = create_reply(x, y, tag).await?;
     let mut send_message = dev_message;
     // Since the file was created in the create_reply function, get the size here
     // We could get it in the function, but that means we have to open the file twice and it's
     // not really worth it
     send_message.push_str(&format!(
         "\nFile size: {}",
-        bytes_to_string(file.metadata().await?.len())
+        bytes_to_string(data.get_ref().len() as u64)
     ));
-    let attachment = AttachmentType::File {
-        file: &file,
+    let attachment = AttachmentType::Bytes {
+        data: std::borrow::Cow::Owned(data.into_inner()),
         filename: "map.png".to_string(),
     };
 
@@ -118,9 +120,9 @@ pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
         .faction;
     let faction = db::factions::get_faction(faction_tag.clone()).await?;
     let (x, y) = (faction.capital_x, faction.capital_y);
-    let (file, _) = create_reply(x, y, faction_tag).await?;
-    let attachment = AttachmentType::File {
-        file: &file,
+    let (data, _) = create_reply(x, y, faction_tag).await?;
+    let attachment = AttachmentType::Bytes {
+        data: std::borrow::Cow::Owned(data.into_inner()),
         filename: "map.png".to_string(),
     };
 
@@ -129,7 +131,7 @@ pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 // This is the function that actually does all the work. Creates the image and the status message
-async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String), Error> {
+async fn create_reply(x: i32, y: i32, faction: String) -> Result<(Cursor<Vec<u8>>, String), Error> {
     let mut dev_message = String::new();
     let mut tiles: Vec<Vec<Tile>> = Vec::new();
     let offset_base = crate::image::VIEW_DISTANCE / 2; // How far to go in each direction
@@ -186,6 +188,10 @@ async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String),
     // Record the time it takes to generate the map
     let mut start = std::time::Instant::now();
     tiles = invert_y(tiles).await;
+    tiles.remove(0);
+    for row in tiles.iter_mut() {
+        row.remove(0);
+    }
 
     let image = crate::image::draw_map(&tiles, faction).await;
     dev_message.push_str(&format!(
@@ -194,9 +200,12 @@ async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String),
     ));
     // Reset the timer and save the image
     start = std::time::Instant::now();
-    image.save("map.png")?;
+    let mut cursor = Cursor::new(Vec::new());
+    image
+        .write_to(&mut cursor, image::ImageOutputFormat::Png)
+        .unwrap();
     dev_message.push_str(&format!(
-        "\nImage saved in {}ms",
+        "\nImage encoded in {}ms",
         start.elapsed().as_millis()
     ));
     dev_message.push_str(&format!(
@@ -204,6 +213,5 @@ async fn create_reply(x: i32, y: i32, faction: String) -> Result<(File, String),
         image.width(),
         image.height()
     ));
-    let file = File::open("map.png").await?;
-    Ok((file, dev_message))
+    Ok((cursor, dev_message))
 }

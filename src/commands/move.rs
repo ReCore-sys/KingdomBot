@@ -1,4 +1,5 @@
 use crate::conversions::string_to_unit;
+use crate::types::permissions::Permissions;
 use crate::types::units::Unit;
 use crate::{db, Context, Error};
 
@@ -18,6 +19,11 @@ pub(crate) async fn move_troops(
     unit: String,
     #[description = "The amount of units you want to move"] amount: u32,
 ) -> Result<(), Error> {
+    let user = db::users::get_user(ctx.author().id.to_string()).await?;
+    if !user.permitted(Permissions::MoveTroops) {
+        ctx.say("You don't have permission to move troops!").await?;
+        return Ok(());
+    }
     if amount == 0 {
         ctx.say("You can't move 0 units!").await?;
         return Ok(());
