@@ -190,7 +190,7 @@ async fn create_reply(x: i32, y: i32, faction: String) -> Result<(Cursor<Vec<u8>
     tiles = invert_y(tiles).await;
     tiles.remove(0);
     for row in tiles.iter_mut() {
-        row.remove(0);
+        row.remove(row.len() - 1);
     }
 
     let image = crate::image::draw_map(&tiles, faction).await;

@@ -3,9 +3,11 @@ use std::thread;
 use atomic_counter::{AtomicCounter, RelaxedCounter};
 use dashmap::DashMap;
 use image::{GenericImage, GenericImageView, ImageBuffer, Rgb, RgbImage};
-use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
+use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut, draw_text_mut};
 use imageproc::rect::Rect;
 use noise::{Clamp, NoiseFn, OpenSimplex};
+use rusttype::{Font, Scale};
+use serde_json::to_string;
 
 use crate::config::get_config;
 use crate::types;
@@ -16,8 +18,8 @@ const INSET_SIZE: i32 = 10;
 const IN_TILE_SIZE: i32 = TILE_SIZE - (INSET_SIZE * 2);
 pub const VIEW_DISTANCE: i32 = 10;
 
-// const TEXT_SCALE: f32 = 75.0;
-// const LETTER_WIDTH: i32 = 30; todo
+const TEXT_SCALE: f32 = 75.0;
+const LETTER_WIDTH: i32 = 30;
 
 // Since these are all constant, coords for the positions of the circles can be precalculated
 const C_1_CENTER: (i32, i32) = (
@@ -54,17 +56,15 @@ pub async fn draw_map(
     let perlin = OpenSimplex::new(get_config().perlin_seed); // Noise so we can texture the background
     let clamped = Clamp::new(perlin).set_bounds(0.1, 0.5);
 
-    /*
     let scale = Scale {
-    x: TEXT_SCALE,
-    y: TEXT_SCALE,
-    }; todo
-    */
+        x: TEXT_SCALE,
+        y: TEXT_SCALE,
+    };
     let completed_tiles: DashMap<(i32, i32), ImageBuffer<Rgb<u8>, Vec<u8>>> = DashMap::new();
     // Dictionary of tiles that have been completed so we can store them in any order
 
-    // let font_bytes = Vec::from(include_bytes!("../font.ttf") as &[u8]);
-    // let font = Font::try_from_vec(font_bytes).unwrap(); todo
+    let font_bytes = Vec::from(include_bytes!("../font.ttf") as &[u8]);
+    let font = Font::try_from_vec(font_bytes).unwrap();
     let flat_grid = Vec::from_iter(grid.iter().flatten().cloned());
     // Since everything is based on the X,Y of the tile, no point in setting up another loop
     let final_amount = flat_grid.len();
@@ -104,24 +104,24 @@ pub async fn draw_map(
                     draw_filled_rect_mut(
                         &mut tile_image,
                         Rect::at(0, offset_start).of_size(BORDER_SIZE as u32, seg_size),
-                        Rgb([255, 0, 0]),
+                        Rgb([28, 119, 114]),
                     );
                     draw_filled_rect_mut(
                         &mut tile_image,
                         Rect::at(offset_start, 0).of_size(seg_size, BORDER_SIZE as u32),
-                        Rgb([255, 0, 0]),
+                        Rgb([28, 119, 114]),
                     );
                     draw_filled_rect_mut(
                         &mut tile_image,
                         Rect::at(TILE_SIZE - BORDER_SIZE, offset_start)
                             .of_size(BORDER_SIZE as u32, seg_size),
-                        Rgb([255, 0, 0]),
+                        Rgb([28, 119, 114]),
                     );
                     draw_filled_rect_mut(
                         &mut tile_image,
                         Rect::at(offset_start, TILE_SIZE - BORDER_SIZE)
                             .of_size(seg_size, BORDER_SIZE as u32),
-                        Rgb([255, 0, 0]),
+                        Rgb([28, 119, 114]),
                     );
                 }
 
@@ -129,7 +129,7 @@ pub async fn draw_map(
 
                 let color = if tile.occupied {
                     if tile.faction == *faction {
-                        Rgb([46, 130, 1])
+                        Rgb([102, 178, 255])
                     } else {
                         Rgb([28, 172, 255])
                     }
@@ -138,6 +138,12 @@ pub async fn draw_map(
                 };
 
                 // Draw 4 circles to make the corners of the square
+                draw_filled_circle_mut(
+                    &mut tile_image,
+                    C_1_CENTER,
+                    (IN_TILE_SIZE / 4) as i32,
+                    color,
+                );
                 draw_filled_circle_mut(
                     &mut tile_image,
                     C_2_CENTER,
@@ -153,12 +159,6 @@ pub async fn draw_map(
                 draw_filled_circle_mut(
                     &mut tile_image,
                     C_4_CENTER,
-                    (IN_TILE_SIZE / 4) as i32,
-                    color,
-                );
-                draw_filled_circle_mut(
-                    &mut tile_image,
-                    C_1_CENTER,
                     (IN_TILE_SIZE / 4) as i32,
                     color,
                 );
@@ -198,6 +198,7 @@ pub async fn draw_map(
         loops_counter.inc();
         // Every 300 loops, check if we're done. This is to prevent a deadlock if something goes wrong
         // with the counter
+        // we are using the same type of counter for this so maybe not the best idea
         if loops_counter.get() > 300 {
             loops_counter.reset();
             if completed_tiles.len() == final_amount {
@@ -214,7 +215,14 @@ pub async fn draw_map(
     y_sorted.sort();
 
     let min_x = x_sorted[0];
+    let max_x = x_sorted[x_sorted.len() - 1];
     let min_y = y_sorted[0];
+    let max_y = y_sorted[y_sorted.len() - 1];
+
+    // Figure out which one has the most characters as a string
+    let mut longest_coord_list = vec![min_x, max_x, min_y, max_y];
+    longest_coord_list.sort_by(|a, b| b.to_string().len().cmp(&a.to_string().len()));
+    let longest_coord = longest_coord_list[longest_coord_list.len() - 1];
 
     for tile in flat_grid {
         // Grab the image from the hashmap
@@ -234,18 +242,113 @@ pub async fn draw_map(
             )
             .expect("Failed to copy tile to final image");
     }
+
+    let mut fullimage = RgbImage::new(
+        image.width() + TILE_SIZE as u32,
+        image.height() + TILE_SIZE as u32,
+    );
+    // Add the coordinates to the image
+    for x_coord in min_x..=max_x {
+        let char_len = x_coord.to_string().len() as i32;
+        let mut x = TILE_SIZE + (x_coord - min_x) * TILE_SIZE;
+        x += (TILE_SIZE / 2) - (((scale.x / 4.0) as i32) * char_len);
+        let mut radius = LETTER_WIDTH + (LETTER_WIDTH / 2);
+        if longest_coord > 1 {
+            radius += (LETTER_WIDTH / 8) * (longest_coord - 1);
+        }
+        draw_filled_circle_mut(
+            &mut fullimage,
+            (
+                (x_coord - min_x) * TILE_SIZE + (TILE_SIZE + (TILE_SIZE / 2)) as i32,
+                (TILE_SIZE / 2) as i32,
+            ),
+            radius,
+            Rgb([46, 48, 53]),
+        );
+        draw_text_mut(
+            &mut fullimage,
+            Rgb([255, 255, 255]),
+            x,
+            (TILE_SIZE / 2) - ((scale.y / 2.0) as i32),
+            scale,
+            &font,
+            &x_coord.to_string(),
+        );
+    }
+
+    for y_coord in min_y..=max_y {
+        let char_len = y_coord.to_string().len() as i32;
+        let mut y = TILE_SIZE + (y_coord - min_x) * TILE_SIZE;
+        y += (TILE_SIZE / 2) - ((scale.y / 2.0) as i32);
+        let x = (TILE_SIZE / 2) - (((scale.x / 4.0) as i32) * char_len);
+        let mut radius = LETTER_WIDTH + (LETTER_WIDTH / 2);
+        if longest_coord > 1 {
+            radius += (LETTER_WIDTH / 8) * (longest_coord - 1);
+        }
+        draw_filled_circle_mut(
+            &mut fullimage,
+            (
+                (TILE_SIZE / 2) as i32,
+                (y_coord - min_y) * TILE_SIZE + (TILE_SIZE + (TILE_SIZE / 2)) as i32,
+            ),
+            radius,
+            Rgb([46, 48, 53]),
+        );
+        draw_text_mut(
+            &mut fullimage,
+            Rgb([255, 255, 255]),
+            x,
+            y,
+            scale,
+            &font,
+            &y_coord.to_string(),
+        );
+    }
+
+    draw_filled_rect_mut(
+        &mut fullimage,
+        Rect::at(TILE_SIZE - (BORDER_SIZE), TILE_SIZE - (BORDER_SIZE * 2)).of_size(
+            (TILE_SIZE * VIEW_DISTANCE - 1) as u32,
+            (BORDER_SIZE * 2) as u32,
+        ),
+        Rgb([28, 119, 68]),
+    );
+
+    draw_filled_rect_mut(
+        &mut fullimage,
+        Rect::at(TILE_SIZE - (BORDER_SIZE * 2), TILE_SIZE - (BORDER_SIZE)).of_size(
+            (BORDER_SIZE * 2) as u32,
+            (TILE_SIZE * VIEW_DISTANCE - 1) as u32,
+        ),
+        Rgb([28, 119, 68]),
+    );
+
+    draw_filled_circle_mut(
+        &mut fullimage,
+        (TILE_SIZE - (BORDER_SIZE), TILE_SIZE - (BORDER_SIZE)),
+        BORDER_SIZE,
+        Rgb([28, 119, 68]),
+    );
+
+    fullimage
+        .copy_from(&image, TILE_SIZE as u32, TILE_SIZE as u32)
+        .expect("Failed to copy image to final image");
     // And we are done!
-    image
+    fullimage
 }
 
+/// Converts an HSV color to RGB
+///
+/// # Arguments
+///
+/// * `h` The hue value, from 0 to 360
+/// * `s` The saturation value, from 0 to 100
+/// * `v` The value value, from 0 to 1
+///
+/// # Returns
+///
+/// * `(u8, u8, u8)` A tuple containing the RGB values
 pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
-    // Convert the HSV values to RGB
-    // The h parameter should be in the range 0-360
-    // The s parameter should be in the range 0-100
-    // The v parameter should be in the range 0-1
-    // All output values should be in the range 0-255
-
-    // convert s to 0-1
     let c = v * (s / 100.0);
     let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
     let m = v - c;
