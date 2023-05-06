@@ -232,6 +232,7 @@ pub async fn draw_map(
         // Subtracting the min values gets us the number of "slots" the tile will be from the top left
         let rel_x = tile.x - min_x;
         let rel_y = tile.y - min_y;
+        // TODO: flip the Y axis. Easiest way is to just iterate over each pixel row and place it at the bottom
         image
             .copy_from(
                 &tile_image
@@ -243,11 +244,12 @@ pub async fn draw_map(
             .expect("Failed to copy tile to final image");
     }
 
-    let mut fullimage = RgbImage::new(
+    let mut full_image = RgbImage::new(
         image.width() + TILE_SIZE as u32,
         image.height() + TILE_SIZE as u32,
     );
     // Add the coordinates to the image
+    // NGL i forgot how most of this worked when I came to document it. Don't touch.
     for x_coord in min_x..=max_x {
         let char_len = x_coord.to_string().len() as i32;
         let mut x = TILE_SIZE + (x_coord - min_x) * TILE_SIZE;
@@ -257,7 +259,7 @@ pub async fn draw_map(
             radius += (LETTER_WIDTH / 8) * (longest_coord - 1);
         }
         draw_filled_circle_mut(
-            &mut fullimage,
+            &mut full_image,
             (
                 (x_coord - min_x) * TILE_SIZE + (TILE_SIZE + (TILE_SIZE / 2)) as i32,
                 (TILE_SIZE / 2) as i32,
@@ -266,7 +268,7 @@ pub async fn draw_map(
             Rgb([46, 48, 53]),
         );
         draw_text_mut(
-            &mut fullimage,
+            &mut full_image,
             Rgb([255, 255, 255]),
             x,
             (TILE_SIZE / 2) - ((scale.y / 2.0) as i32),
@@ -276,6 +278,8 @@ pub async fn draw_map(
         );
     }
 
+    // I need to somehow invert the labels for the Y axis so the lower numbers are at the bottom
+    // TODO
     for y_coord in min_y..=max_y {
         let char_len = y_coord.to_string().len() as i32;
         let mut y = TILE_SIZE + (y_coord - min_x) * TILE_SIZE;
@@ -286,7 +290,7 @@ pub async fn draw_map(
             radius += (LETTER_WIDTH / 8) * (longest_coord - 1);
         }
         draw_filled_circle_mut(
-            &mut fullimage,
+            &mut full_image,
             (
                 (TILE_SIZE / 2) as i32,
                 (y_coord - min_y) * TILE_SIZE + (TILE_SIZE + (TILE_SIZE / 2)) as i32,
@@ -295,7 +299,7 @@ pub async fn draw_map(
             Rgb([46, 48, 53]),
         );
         draw_text_mut(
-            &mut fullimage,
+            &mut full_image,
             Rgb([255, 255, 255]),
             x,
             y,
@@ -305,8 +309,9 @@ pub async fn draw_map(
         );
     }
 
+    // Draw the green border around the map
     draw_filled_rect_mut(
-        &mut fullimage,
+        &mut full_image,
         Rect::at(TILE_SIZE - (BORDER_SIZE), TILE_SIZE - (BORDER_SIZE * 2)).of_size(
             (TILE_SIZE * VIEW_DISTANCE - 1) as u32,
             (BORDER_SIZE * 2) as u32,
@@ -315,7 +320,7 @@ pub async fn draw_map(
     );
 
     draw_filled_rect_mut(
-        &mut fullimage,
+        &mut full_image,
         Rect::at(TILE_SIZE - (BORDER_SIZE * 2), TILE_SIZE - (BORDER_SIZE)).of_size(
             (BORDER_SIZE * 2) as u32,
             (TILE_SIZE * VIEW_DISTANCE - 1) as u32,
@@ -324,17 +329,17 @@ pub async fn draw_map(
     );
 
     draw_filled_circle_mut(
-        &mut fullimage,
+        &mut full_image,
         (TILE_SIZE - (BORDER_SIZE), TILE_SIZE - (BORDER_SIZE)),
         BORDER_SIZE,
         Rgb([28, 119, 68]),
     );
 
-    fullimage
+    full_image
         .copy_from(&image, TILE_SIZE as u32, TILE_SIZE as u32)
         .expect("Failed to copy image to final image");
     // And we are done!
-    fullimage
+    full_image
 }
 
 /// Converts an HSV color to RGB

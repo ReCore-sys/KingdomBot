@@ -131,7 +131,11 @@ pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 // This is the function that actually does all the work. Creates the image and the status message
-async fn create_reply(x: i32, y: i32, faction: String) -> Result<(Cursor<Vec<u8>>, String), Error> {
+pub async fn create_reply(
+    x: i32,
+    y: i32,
+    faction: String,
+) -> Result<(Cursor<Vec<u8>>, String), Error> {
     let mut dev_message = String::new();
     let mut tiles: Vec<Vec<Tile>> = Vec::new();
     let offset_base = crate::image::VIEW_DISTANCE / 2; // How far to go in each direction

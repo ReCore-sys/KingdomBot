@@ -87,11 +87,14 @@ pub(crate) async fn move_troops(
         }
     }
     food_cost *= distance;
+    if food_cost == 0 {
+        food_cost = 1;
+    }
     let food = db::factions::get_faction(faction.clone())
         .await?
         .production
         .food;
-    if food < food_cost as f64 {
+    if food < food_cost as i32 {
         ctx.send(|e| {
             e.embed(|e| {
                 e.title("You don't have enough food to move that many units!");
@@ -145,7 +148,7 @@ pub(crate) async fn move_troops(
         .await?
         .production
         .food;
-    let new_food = current_food - food_cost as f64;
+    let new_food = current_food - food_cost as i32;
     let mut faction = db::factions::get_faction(faction.clone()).await?;
     faction.production.food = new_food;
     save_result = db::factions::save_faction(faction).await;

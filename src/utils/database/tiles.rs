@@ -240,6 +240,14 @@ pub async fn get_all() -> Result<Vec<Tile>, mongodb::error::Error> {
     Ok(all)
 }
 
+pub async fn get_all_by_faction(tag: String) -> Result<Vec<Tile>, mongodb::error::Error> {
+    let db = db::get_db().await?;
+    let filter = doc! {"faction": tag};
+    let cursor = db.collection::<Tile>("tiles").find(filter, None).await?;
+    let all: Vec<Tile> = cursor.try_collect().await?;
+    Ok(all)
+}
+
 /// A more accessible version of internal_get_tile. Creates its own database connection
 ///
 /// # Arguments

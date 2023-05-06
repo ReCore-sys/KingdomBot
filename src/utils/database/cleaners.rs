@@ -3,7 +3,7 @@ use crate::types::map::Tile;
 use crate::types::users::User;
 use crate::{db, Error};
 
-pub(crate) async fn clean_users() -> Result<(), Error> {
+pub async fn clean_users() -> Result<(), Error> {
     let users = db::users::get_all().await?;
     let mut cleaned_users: Vec<User> = Vec::new();
     for user in users {
@@ -19,7 +19,7 @@ pub(crate) async fn clean_users() -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) async fn clean_tiles() -> Result<(), Error> {
+pub async fn clean_tiles() -> Result<(), Error> {
     let tiles = db::tiles::get_all().await?;
     let mut cleaned_tiles: Vec<Tile> = Vec::new();
     let mut to_delete: Vec<Tile> = Vec::new();
@@ -51,7 +51,7 @@ pub(crate) async fn clean_tiles() -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) async fn clean_factions() -> Result<(), Error> {
+pub async fn clean_factions() -> Result<(), Error> {
     let factions = db::factions::get_all().await?;
     let mut cleaned_factions: Vec<Faction> = Vec::new();
     let mut to_delete: Vec<Faction> = Vec::new();

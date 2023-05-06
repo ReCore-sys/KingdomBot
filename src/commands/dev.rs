@@ -8,7 +8,14 @@ use crate::{db, Context, Error};
     prefix_command,
     ephemeral,
     description_localized("en-US", "A set of dev commands"),
-    subcommands("create_tile", "update_fields", "clean_db", "panic", "error")
+    subcommands(
+        "create_tile",
+        "update_fields",
+        "clean_db",
+        "panic",
+        "error",
+        "build_db"
+    )
 )]
 pub(crate) async fn dev(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("This command is not yet implemented").await?;
@@ -99,4 +106,16 @@ pub(crate) async fn error(ctx: Context<'_>) -> Result<(), Error> {
     }
     let error = Error::from("This is an error");
     Err(error)
+}
+
+#[poise::command(
+    slash_command,
+    prefix_command,
+    ephemeral,
+    description_localized("en-US", "Rebuild a faction's production stats")
+)]
+pub(crate) async fn build_db(ctx: Context<'_>) -> Result<(), Error> {
+    db::build_production().await?;
+    ctx.say("Rebuilt production stats").await?;
+    Ok(())
 }
