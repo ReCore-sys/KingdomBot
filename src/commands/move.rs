@@ -94,7 +94,7 @@ pub(crate) async fn move_troops(
         .await?
         .production
         .food;
-    if food < food_cost as i32 {
+    if food < food_cost as f32 {
         ctx.send(|e| {
             e.embed(|e| {
                 e.title("You don't have enough food to move that many units!");
@@ -148,7 +148,7 @@ pub(crate) async fn move_troops(
         .await?
         .production
         .food;
-    let new_food = current_food - food_cost as i32;
+    let new_food = current_food - food_cost as f32;
     let mut faction = db::factions::get_faction(faction.clone()).await?;
     faction.production.food = new_food;
     save_result = db::factions::save_faction(faction).await;

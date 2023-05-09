@@ -3,7 +3,9 @@ extern crate log;
 
 use poise::serenity_prelude as serenity;
 use rust_embed::RustEmbed;
+use tokio::join;
 
+use crate::background::background_loop;
 use commands::map::map;
 
 use crate::commands::build::build;
@@ -14,6 +16,8 @@ use crate::commands::r#move::move_troops;
 use crate::commands::tile::tile;
 use crate::commands::user::register;
 
+#[path = "utils/background.rs"]
+mod background;
 mod commands;
 #[path = "utils/config.rs"]
 mod config;
@@ -28,7 +32,6 @@ mod misc;
 mod tests;
 #[path = "utils/types.rs"]
 mod types;
-
 #[derive(RustEmbed)]
 #[folder = "src/help/topics/"]
 struct HelpTopics;
@@ -82,6 +85,13 @@ async fn main() {
                 Ok(Data {})
             })
         });
-    framework.run().await.unwrap();
+    let bot_task = tokio::task::spawn(framework.run());
+    let bg_loop = tokio::task::spawn(background_loop());
+    let loop_res = join!(bot_task, bg_loop);
+    loop_res
+        .0
+        .expect("Main bot task broke in at the task level")
+        .expect("The bot task broke at the bot level");
+    loop_res.1.expect("Background loop broke");
     warn!("Bot stopped.")
 }

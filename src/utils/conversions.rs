@@ -81,3 +81,7 @@ pub(crate) async fn string_to_building(string: &String) -> Result<Building, bool
         _ => Err(false),
     }
 }
+
+pub fn day_to_seconds(day: f32) -> f32 {
+    day / 60.0 / 60.0 / 24.0
+}

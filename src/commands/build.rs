@@ -89,28 +89,28 @@ pub(crate) async fn build(
         .faction;
     let mut faction = db::factions::get_faction(faction_tag).await.unwrap();
     let details = building.data();
-    if details.cost > faction.production.money {
+    if details.cost > faction.production.money.floor() as i32 {
         ctx.say("You don't have enough money to build that!")
             .await
             .unwrap();
         return Ok(());
     }
-    if details.wood > faction.production.wood {
+    if details.wood > faction.production.wood.floor() as i32 {
         ctx.say("You don't have enough wood to build that!")
             .await
             .unwrap();
         return Ok(());
     }
-    if details.metal > faction.production.wood {
-        ctx.say("You don't have enough stone to build that!")
+    if details.metal > faction.production.metal.floor() as i32 {
+        ctx.say("You don't have enough metal to build that!")
             .await
             .unwrap();
         return Ok(());
     }
 
-    faction.production.money -= details.cost;
-    faction.production.wood -= details.wood;
-    faction.production.metal -= details.metal;
+    faction.production.money -= details.cost as f32;
+    faction.production.wood -= details.wood as f32;
+    faction.production.metal -= details.metal as f32;
     db::factions::save_faction(faction).await.unwrap();
     let mut tile = db::tiles::get_tile(x, y).await.unwrap();
     let mut buildings = tile.buildings;

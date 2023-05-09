@@ -1,6 +1,8 @@
 use poise::Modal;
 use rand::Rng;
 use regex::Regex;
+use std::time::SystemTime;
+use tokio::time;
 
 use crate::conversions::modal_to_faction;
 use crate::db::tiles::blank_tile;
@@ -126,14 +128,18 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
     }
     let mut converted_data = modal_to_faction(&data).await;
     converted_data.leader = ctx.author().id.to_string();
-    converted_data.production.money = 100;
-    converted_data.production.wood = 100;
-    converted_data.production.metal = 100;
-    converted_data.production.food = 100;
-    converted_data.production.population = 100;
+    converted_data.production.money = 100.0;
+    converted_data.production.wood = 100.0;
+    converted_data.production.metal = 100.0;
+    converted_data.production.food = 500.0;
+    converted_data.production.population = 100.0;
     converted_data.production.happiness = 80.0;
     converted_data.capital_x = faction_location.0;
     converted_data.capital_y = faction_location.1;
+    converted_data.production.last_updated = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     converted_data.members.push(ctx.author().id.to_string());
     db::factions::save_faction(converted_data)
         .await

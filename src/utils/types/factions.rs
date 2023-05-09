@@ -27,34 +27,37 @@ pub(crate) struct Faction {
     pub(crate) production: Production,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Copy)]
 pub(crate) struct Production {
     #[serde(default)]
-    pub(crate) money: i32,
+    pub(crate) last_updated: u64,
+    // The last time the production was updated
+    #[serde(default)]
+    pub(crate) money: f32,
     // The amount of money the faction has
     #[serde(default)]
     pub(crate) money_per_second: f64,
     // The amount of money the faction gets per second
     #[serde(default)]
-    pub(crate) population: i64,
+    pub(crate) population: f64,
     // How many people live across the faction
     #[serde(default)]
     pub(crate) population_per_second: f64,
     // How many people the faction gets per second. We only actually increase this once an hour
     #[serde(default)]
-    pub(crate) food: i32,
+    pub(crate) food: f32,
     // How much food the faction has
     #[serde(default)]
     pub(crate) food_per_second: f64,
     // How much food the faction gets per second
     #[serde(default)]
-    pub(crate) wood: i32,
+    pub(crate) wood: f32,
     // How much wood the faction has
     #[serde(default)]
     pub(crate) wood_per_second: f64,
     // How much wood the faction gets per second
     #[serde(default)]
-    pub(crate) metal: i32,
+    pub(crate) metal: f32,
     // How much metal the faction has
     #[serde(default)]
     pub(crate) metal_per_second: f64,
