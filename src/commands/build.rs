@@ -1,13 +1,13 @@
 use crate::conversions::string_to_building;
+use crate::misc::log_command_used;
 use crate::types::buildings::Building;
 use crate::types::permissions::Permissions;
 use crate::{db, Context, Error};
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Construct a building")
+slash_command,
+// ephemeral,
+description_localized("en-US", "Construct a building")
 )]
 pub(crate) async fn build(
     ctx: Context<'_>,
@@ -16,6 +16,7 @@ pub(crate) async fn build(
     #[description_localized("en-US", "The x coordinate of the tile to build on")] x: i32,
     #[description_localized("en-US", "The y coordinate of the tile to build on")] y: i32,
 ) -> Result<(), Error> {
+    log_command_used(ctx).await;
     let user = db::users::get_user(ctx.author().id.to_string())
         .await
         .unwrap();

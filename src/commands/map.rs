@@ -6,15 +6,12 @@ use db::tiles;
 
 use crate::conversions::{bytes_to_string, split_tiles};
 use crate::db::tiles::{blank_tile, invert_y};
+use crate::misc::log_command_used;
 use crate::types::map::Tile;
 use crate::{db, Context, Error};
 
 // The parent command. Doesn't really need to do anything.
-#[poise::command(
-    slash_command,
-    prefix_command,
-    subcommands("position", "dev", "capital")
-)]
+#[poise::command(slash_command, subcommands("position", "dev", "capital"))]
 pub(crate) async fn map(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -22,16 +19,17 @@ pub(crate) async fn map(_: Context<'_>) -> Result<(), Error> {
 // The user-facing command. This is the one that gets called when the user types /map position
 // it calls on the create_reply function to get the image, but ignores the message
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Get a map of the world around you")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Get a map of the world around you")
 )]
 pub(crate) async fn position(
     ctx: Context<'_>,
     #[description = "X coordinate of the centre tile"] x: i32,
     #[description = "Y coordinate of the centre tile"] y: i32,
 ) -> Result<(), Error> {
+    log_command_used(ctx).await;
     if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
@@ -54,17 +52,17 @@ pub(crate) async fn position(
 
 // Same as the position command, but this one sends the message as well
 #[poise::command(
-    slash_command,
-    prefix_command,
-    track_edits,
-    ephemeral,
-    description_localized("en-US", "Same as /map position, but has extra debug info")
+slash_command,
+track_edits,
+// ephemeral,
+description_localized("en-US", "Same as /map position, but has extra debug info")
 )]
 pub(crate) async fn dev(
     ctx: Context<'_>,
     #[description = "X coordinate of the centre tile"] x: i32,
     #[description = "Y coordinate of the centre tile"] y: i32,
 ) -> Result<(), Error> {
+    log_command_used(ctx).await;
     if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
@@ -94,13 +92,13 @@ pub(crate) async fn dev(
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    track_edits,
-    ephemeral,
-    description_localized("en-US", "Automatically gets the map of your faction's capital")
+slash_command,
+track_edits,
+// ephemeral,
+description_localized("en-US", "Automatically gets the map of your faction's capital")
 )]
 pub(crate) async fn capital(ctx: Context<'_>) -> Result<(), Error> {
+    log_command_used(ctx).await;
     if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
@@ -156,7 +154,7 @@ pub async fn create_reply(
         tiles = split_tiles(flat_tiles, crate::image::VIEW_DISTANCE);
     } else {
         // First see if any tiles exist
-        if !tiles::any_exist(x_range, y_range).await? {
+        if tiles::any_exist(x_range, y_range).await? {
             // If they don't, it's easier to just make a load of blank tiles
             dev_message.push_str("0%");
             let empty_tiles = tiles::blank_tile_range(x_range, y_range).await;

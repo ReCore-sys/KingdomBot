@@ -1,17 +1,19 @@
+use crate::misc::log_command_used;
 use crate::{db, Context, Error};
 
-#[poise::command(slash_command, prefix_command, subcommands("info"))]
+#[poise::command(slash_command, subcommands("info"))]
 pub(crate) async fn tile(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Gets info about a tile")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Gets info about a tile")
 )]
 pub(crate) async fn info(ctx: Context<'_>, x: i32, y: i32) -> Result<(), Error> {
+    log_command_used(ctx).await;
     let cant_see_message = "You can't see that tile!";
     let faction = db::users::get_user(ctx.author().id.to_string())
         .await?

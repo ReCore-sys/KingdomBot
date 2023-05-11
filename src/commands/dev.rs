@@ -1,28 +1,28 @@
 use crate::db::tiles;
 use crate::db::tiles::blank_tile;
-use crate::misc::reply_admin;
+use crate::misc::{log_command_used, reply_admin};
 use crate::{db, Context, Error};
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "A set of dev commands"),
-    subcommands(
-        "create_tile",
-        "update_fields",
-        "clean_db",
-        "panic",
-        "error",
-        "build_db"
-    )
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "A set of dev commands"),
+subcommands(
+"create_tile",
+"update_fields",
+"clean_db",
+"panic",
+"error",
+"build_db"
+)
 )]
 pub(crate) async fn dev(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("This command is not yet implemented").await?;
     Ok(())
 }
 
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 pub(crate) async fn create_tile(
     ctx: Context<'_>,
     #[description = "X coordinate of the tile"] x: i32,
@@ -39,10 +39,10 @@ pub(crate) async fn create_tile(
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Update struct fields in the db")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Update struct fields in the db")
 )]
 pub(crate) async fn update_fields(ctx: Context<'_>) -> Result<(), Error> {
     if !reply_admin(ctx).await? {
@@ -64,12 +64,14 @@ pub(crate) async fn update_fields(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Cleans the database")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Cleans the database")
 )]
 pub(crate) async fn clean_db(ctx: Context<'_>) -> Result<(), Error> {
+    log_command_used(ctx).await;
+
     if !reply_admin(ctx).await? {
         return Ok(());
     }
@@ -81,10 +83,10 @@ pub(crate) async fn clean_db(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Causes a division by zero panic")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Causes a division by zero panic")
 )]
 pub(crate) async fn panic(ctx: Context<'_>) -> Result<(), Error> {
     if !reply_admin(ctx).await? {
@@ -95,10 +97,10 @@ pub(crate) async fn panic(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Returns an error")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Returns an error")
 )]
 pub(crate) async fn error(ctx: Context<'_>) -> Result<(), Error> {
     if !reply_admin(ctx).await? {
@@ -109,10 +111,10 @@ pub(crate) async fn error(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Rebuild a faction's production stats")
+slash_command,
+
+// // ephemeral,
+description_localized("en-US", "Rebuild a faction's production stats")
 )]
 pub(crate) async fn build_db(ctx: Context<'_>) -> Result<(), Error> {
     db::build_production().await?;

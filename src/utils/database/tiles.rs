@@ -176,7 +176,7 @@ pub async fn any_exist(
     y_range: (i32, i32),
 ) -> Result<bool, mongodb::error::Error> {
     let db = db::get_db().await?;
-    let filter = doc! {"x": {"$gte": x_range.0, "$lte": x_range.1}, "y": {"$gte": y_range.0, "$lte": y_range.1}};
+    let filter = doc! {"x": {"$gte": x_range.1, "$lte": x_range.0}, "y": {"$gte": y_range.1, "$lte": y_range.0}};
     let options = FindOptions::builder().limit(1).build();
     let collection = db.collection::<Tile>("tiles");
     let cursor = collection.find(filter, options).await?;
@@ -351,7 +351,7 @@ pub async fn can_faction_see(
 ) -> Result<bool, mongodb::error::Error> {
     let x_range = (x - VIEW_DISTANCE, x + VIEW_DISTANCE);
     let y_range = (y - VIEW_DISTANCE, y + VIEW_DISTANCE);
-    let any_tiles_in_range = any_exist(x_range, y_range).await?;
+    let any_tiles_in_range = !any_exist(x_range, y_range).await?;
     if !any_tiles_in_range {
         return Ok(false);
     }

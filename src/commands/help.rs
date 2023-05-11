@@ -2,24 +2,24 @@ use std::str;
 
 use regex::Regex;
 
+use crate::misc::log_command_used;
 use crate::{Context, Error};
 
 #[poise::command(
     slash_command,
-    prefix_command,
-    ephemeral,
     description_localized("en-US", "Walks you through how the game works")
 )]
 pub(crate) async fn guide(ctx: Context<'_>) -> Result<(), Error> {
+    log_command_used(ctx).await;
     ctx.say(crate::GUIDE_MESSAGE).await?;
     return Ok(());
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Explains a topic")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Explains a topic")
 )]
 pub(crate) async fn explain(
     ctx: Context<'_>,
@@ -27,6 +27,7 @@ pub(crate) async fn explain(
     #[description = "The topic to explain. Leave blank to list the topics"]
     command: Option<String>,
 ) -> Result<(), Error> {
+    log_command_used(ctx).await;
     let pattern = Regex::new(r"(.+)\.txt").unwrap();
     let mut topics: Vec<String> = Vec::new();
     for topic in crate::HelpTopics::iter() {

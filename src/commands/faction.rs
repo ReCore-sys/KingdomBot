@@ -1,12 +1,14 @@
+use std::time::SystemTime;
+
 use poise::Modal;
 use rand::Rng;
 use regex::Regex;
-use std::time::SystemTime;
 use tokio::time;
 
 use crate::conversions::modal_to_faction;
 use crate::db::tiles::blank_tile;
 use crate::image::VIEW_DISTANCE;
+use crate::misc::log_command_used;
 use crate::types::buildings::Building;
 use crate::types::permissions::Permissions;
 use crate::types::units::Unit;
@@ -14,10 +16,11 @@ use crate::{db, Context, Data, Error};
 
 const CAPITAL_PLACE_RANGE: i32 = VIEW_DISTANCE * 3;
 const INFO_INLINE: bool = true;
+const MAX_CAPITAL_DIST: i32 = 500;
 
 type ApplicationContext<'a> = poise::ApplicationContext<'a, Data, Error>;
 
-#[poise::command(slash_command, prefix_command, subcommands("create", "info"))]
+#[poise::command(slash_command, subcommands("create", "info"))]
 pub(crate) async fn faction(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -33,6 +36,7 @@ pub(crate) struct FactionModal {
     #[min_length = 4]
     #[placeholder = "ABCD"]
     pub(crate) faction_tag: String,
+    #[max_length = 250]
     #[name = "The description of the faction"]
     #[placeholder = "How would you describe your faction? This can be changed later"]
     #[paragraph]
@@ -43,11 +47,12 @@ pub(crate) struct FactionModal {
 }
 
 #[poise::command(
-    slash_command,
-    ephemeral,
-    description_localized("en-US", "If you aren't already in one, create a faction!")
+slash_command,
+// ephemeral,
+description_localized("en-US", "If you aren't already in one, create a faction!")
 )]
 pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
+    log_command_used(ctx).await;
     if !db::users::user_exists(ctx.author().id.to_string()).await? {
         ctx.say("You need to register first!\nUse `/register` to join!")
             .await?;
@@ -76,7 +81,23 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
             .captures(&data.faction_location.as_ref().unwrap())
             .unwrap();
         let x = captures.get(1).unwrap().as_str().parse::<i32>().unwrap();
+        if x > MAX_CAPITAL_DIST || x < -MAX_CAPITAL_DIST {
+            ctx.say(format!(
+                "The x coordinate must be between {} and {}!",
+                -MAX_CAPITAL_DIST, MAX_CAPITAL_DIST
+            ))
+            .await?;
+            return Ok(());
+        }
         let y = captures.get(2).unwrap().as_str().parse::<i32>().unwrap();
+        if y > MAX_CAPITAL_DIST || y < -MAX_CAPITAL_DIST {
+            ctx.say(format!(
+                "The y coordinate must be between {} and {}!",
+                -MAX_CAPITAL_DIST, MAX_CAPITAL_DIST
+            ))
+            .await?;
+            return Ok(());
+        }
         let y_range = (y + CAPITAL_PLACE_RANGE, y - CAPITAL_PLACE_RANGE);
         let x_range = (x + CAPITAL_PLACE_RANGE, x - CAPITAL_PLACE_RANGE);
         let valid = !db::tiles::any_exist(x_range, y_range).await?;
@@ -174,12 +195,12 @@ pub(crate) async fn create(ctx: ApplicationContext<'_>) -> Result<(), Error> {
 }
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Get information about your faction")
+slash_command,
+// ephemeral,
+description_localized("en-US", "Get information about your faction")
 )]
 pub(crate) async fn info(ctx: Context<'_>) -> Result<(), Error> {
+    log_command_used(ctx).await;
     let user = db::users::get_user(ctx.author().id.to_string()).await?;
     if user.faction == "" {
         ctx.say("You are not in a faction!").await?;
@@ -203,7 +224,7 @@ pub(crate) async fn info(ctx: Context<'_>) -> Result<(), Error> {
                 .field("Leader", leader.username, INFO_INLINE)
                 .field(
                     "Population",
-                    faction.production.population.to_string(),
+                    format!("{}", faction.production.population.floor() as i32),
                     INFO_INLINE,
                 )
                 .field(
@@ -213,7 +234,17 @@ pub(crate) async fn info(ctx: Context<'_>) -> Result<(), Error> {
                 )
                 .field(
                     "Food",
-                    format!("{}kg", faction.production.food),
+                    format!("{:.2}kg", faction.production.food),
+                    INFO_INLINE,
+                )
+                .field(
+                    "Wood",
+                    format!("{:}", faction.production.wood.floor() as i32),
+                    INFO_INLINE,
+                )
+                .field(
+                    "Metal",
+                    format!("{}", faction.production.metal.floor() as i32),
                     INFO_INLINE,
                 )
         })

@@ -1,13 +1,14 @@
 use crate::conversions::string_to_unit;
+use crate::misc::log_command_used;
 use crate::types::permissions::Permissions;
 use crate::types::units::Unit;
 use crate::{db, Context, Error};
 
 #[poise::command(
-    slash_command,
-    prefix_command,
-    ephemeral,
-    description_localized("en-US", "Move troops and people from one position to another")
+slash_command,
+
+// ephemeral,
+description_localized("en-US", "Move troops and people from one position to another")
 )]
 pub(crate) async fn move_troops(
     ctx: Context<'_>,
@@ -19,6 +20,7 @@ pub(crate) async fn move_troops(
     unit: String,
     #[description = "The amount of units you want to move"] amount: u32,
 ) -> Result<(), Error> {
+    log_command_used(ctx).await;
     let user = db::users::get_user(ctx.author().id.to_string()).await?;
     if !user.permitted(Permissions::MoveTroops) {
         ctx.say("You don't have permission to move troops!").await?;

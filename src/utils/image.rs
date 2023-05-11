@@ -66,7 +66,7 @@ pub async fn draw_map(
     let font_bytes = Vec::from(include_bytes!("../font.ttf") as &[u8]);
     let font = Font::try_from_vec(font_bytes).unwrap();
     let flat_grid = Vec::from_iter(grid.iter().flatten().cloned());
-    // Since everything is based on the X,Y of the tile, no point in setting up another loop
+    // Since everything is based on the X,Y of the tile, no point in setting up nested loops
     let final_amount = flat_grid.len();
 
     let center_tile = flat_grid[flat_grid.len() / 2].clone();
@@ -92,9 +92,7 @@ pub async fn draw_map(
                     }
                 }
 
-                // You, a beta male: Draws the inner tile once for each game tile
-                // Me, a sigma male: Accidentally draws the inner tile 1000 times for each game tile
-                // See last commit for context
+                // TODO: add images. Make sure they are flipped so i can cause myself more issues later on :)
 
                 if tile.x == center_tile.x && tile.y == center_tile.y {
                     // Draw a little signifier for the centre tile
@@ -126,6 +124,9 @@ pub async fn draw_map(
                 }
 
                 // Now we draw the inner tile
+                if tile.x == 30 && tile.y == 5 {
+                    info!("{:#?}", tile);
+                }
 
                 let color = if tile.occupied {
                     if tile.faction == *faction {
@@ -232,7 +233,6 @@ pub async fn draw_map(
         // Subtracting the min values gets us the number of "slots" the tile will be from the top left
         let rel_x = tile.x - min_x;
         let rel_y = tile.y - min_y;
-        // TODO: flip the Y axis. Easiest way is to just iterate over each pixel row and place it at the bottom
         image
             .copy_from(
                 &tile_image
@@ -244,20 +244,36 @@ pub async fn draw_map(
             .expect("Failed to copy tile to final image");
     }
 
+    let mut img_copy = image.clone();
+    // This is stupid. This is so many levels of stupid. But it's easy. So instead of doing the
+    // smart thing and placing the tiles in the correct order, I'm just going to flip the image
+    // afterwards so I don't have to also flip the perlin noise for each tile. This is terrible and I hate it
+    for y_level in 0..((VIEW_DISTANCE - 1) * TILE_SIZE) {
+        let img_size = image.height() as i32;
+        let inverse_y = img_size - y_level;
+        img_copy
+            .copy_from(
+                &image
+                    .view(0, inverse_y as u32 - 1, image.width(), 1)
+                    .to_image(),
+                0,
+                y_level as u32,
+            )
+            .expect("Failed to copy image layer");
+    }
+    image = img_copy;
+
     let mut full_image = RgbImage::new(
         image.width() + TILE_SIZE as u32,
         image.height() + TILE_SIZE as u32,
     );
+
+    let radius = LETTER_WIDTH * 2;
     // Add the coordinates to the image
     // NGL i forgot how most of this worked when I came to document it. Don't touch.
     for x_coord in min_x..=max_x {
-        let char_len = x_coord.to_string().len() as i32;
         let mut x = TILE_SIZE + (x_coord - min_x) * TILE_SIZE;
-        x += (TILE_SIZE / 2) - (((scale.x / 4.0) as i32) * char_len);
-        let mut radius = LETTER_WIDTH + (LETTER_WIDTH / 2);
-        if longest_coord > 1 {
-            radius += (LETTER_WIDTH / 8) * (longest_coord - 1);
-        }
+        x += (TILE_SIZE / 2) - (((scale.x / 4.0) as i32) * 2);
         draw_filled_circle_mut(
             &mut full_image,
             (
@@ -285,10 +301,6 @@ pub async fn draw_map(
         let mut y = TILE_SIZE + (y_coord - min_x) * TILE_SIZE;
         y += (TILE_SIZE / 2) - ((scale.y / 2.0) as i32);
         let x = (TILE_SIZE / 2) - (((scale.x / 4.0) as i32) * char_len);
-        let mut radius = LETTER_WIDTH + (LETTER_WIDTH / 2);
-        if longest_coord > 1 {
-            radius += (LETTER_WIDTH / 8) * (longest_coord - 1);
-        }
         draw_filled_circle_mut(
             &mut full_image,
             (

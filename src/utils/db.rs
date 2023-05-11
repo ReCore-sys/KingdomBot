@@ -104,17 +104,18 @@ pub async fn update_economy() -> Result<(), Error> {
         .unwrap()
         .as_secs();
     let factions = factions::get_all().await?;
+    let conn = db::get_db().await?;
     for mut faction in factions {
         let mut production = faction.production;
-        let time_difference = current_epoch - production.last_updated;
-        production.money += (production.money_per_second * time_difference as f64) as f32;
-        production.food += (production.food_per_second * time_difference as f64) as f32;
-        production.wood += (production.wood_per_second * time_difference as f64) as f32;
-        production.metal += (production.metal_per_second * time_difference as f64) as f32;
-        production.population += (production.population_per_second * time_difference as f64) as f64;
+        let time_difference = (current_epoch - production.last_updated) as f64;
+        production.money += (production.money_per_second * time_difference) as f32;
+        production.food += (production.food_per_second * time_difference) as f32;
+        production.wood += (production.wood_per_second * time_difference) as f32;
+        production.metal += (production.metal_per_second * time_difference) as f32;
+        production.population += (production.population_per_second * time_difference) as f64;
         production.last_updated = current_epoch;
         faction.production = production;
-        factions::save_faction(faction).await?;
+        factions::internal_save_faction(&conn, faction).await?;
     }
     Ok(())
 }
